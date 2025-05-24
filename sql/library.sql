@@ -32,3 +32,12 @@ CREATE TABLE loans (
 -- Insert default admin account
 INSERT INTO members (username, password, full_name, role)
 VALUES ('admin', 'admin123', 'Administrator', 'ADMIN');
+
+ALTER TABLE loans
+DROP FOREIGN KEY loans_ibfk_1;
+
+ALTER TABLE loans
+    ADD CONSTRAINT loans_ibfk_1
+        FOREIGN KEY (book_id)
+            REFERENCES books (id)
+            ON DELETE CASCADE;
