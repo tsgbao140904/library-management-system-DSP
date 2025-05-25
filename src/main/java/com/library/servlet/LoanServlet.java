@@ -1,12 +1,11 @@
 package com.library.servlet;
 
-import com.library.dao.LoanDAO;
 import com.library.dao.BookDAO;
-import com.library.model.Loan;
+import com.library.dao.LoanDAO;
+import com.library.dao.MemberDAO;
 import com.library.model.Book;
-import com.library.model.strategy.DailyFeeCalculator;
-import com.library.model.strategy.FeeCalculator;
-import com.library.model.strategy.QuantityFeeCalculator;
+import com.library.model.Loan;
+import com.library.model.Member;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -19,87 +18,98 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
 
-@WebServlet({"/admin/loans", "/member/borrow", "/member/return"})
+@WebServlet("/admin/loans")
 public class LoanServlet extends HttpServlet {
     private LoanDAO loanDAO;
     private BookDAO bookDAO;
+    private MemberDAO memberDAO;
 
     @Override
     public void init() {
         loanDAO = new LoanDAO();
         bookDAO = new BookDAO();
+        memberDAO = new MemberDAO();
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        HttpSession session = req.getSession(false);
-        String contextPath = req.getContextPath();
-        if (session == null || session.getAttribute("user") == null) {
-            resp.sendRedirect(contextPath + "/login");
+        HttpSession session = req.getSession();
+        Member user = (Member) session.getAttribute("user");
+        if (user == null || !user.getRole().equals("ADMIN")) {
+            resp.sendRedirect(req.getContextPath() + "/login");
             return;
         }
 
-        String path = req.getServletPath();
+        String action = req.getParameter("action");
+        if ("return".equals(action)) {
+            handleReturn(req, resp);
+            return;
+        }
+
         try {
-            if ("/member/return".equals(path)) {
-                String action = req.getParameter("action");
-                int memberId = ((com.library.model.Member) session.getAttribute("user")).getId();
-                if ("return".equals(action)) {
-                    int id = Integer.parseInt(req.getParameter("id"));
-                    String feeType = req.getParameter("feeType");
-                    FeeCalculator feeCalculator = "daily".equals(feeType) ? new DailyFeeCalculator() : new QuantityFeeCalculator();
-                    loanDAO.returnBook(id, feeCalculator);
-                }
-                List<Loan> loans = loanDAO.getAllLoans().stream()
-                        .filter(loan -> loan.getMemberId() == memberId && loan.getReturnDate() == null)
-                        .toList();
-                req.setAttribute("loans", loans);
-                req.getRequestDispatcher("/member/return.jsp").forward(req, resp);
-            } else if ("/member/borrow".equals(path)) {
-                List<Book> books = bookDAO.getAllBooks();
-                req.setAttribute("books", books);
-                req.getRequestDispatcher("/member/borrow.jsp").forward(req, resp);
-            } else if ("/admin/loans".equals(path)) {
-                String action = req.getParameter("action");
-                if ("return".equals(action)) {
-                    int id = Integer.parseInt(req.getParameter("id"));
-                    String feeType = req.getParameter("feeType");
-                    FeeCalculator feeCalculator = "daily".equals(feeType) ? new DailyFeeCalculator() : new QuantityFeeCalculator();
-                    loanDAO.returnBook(id, feeCalculator);
-                    resp.sendRedirect(contextPath + "/admin/loans"); // Thêm chuyển hướng để refresh trang
-                    return;
-                }
-                List<Loan> loans = loanDAO.getAllLoans();
-                req.setAttribute("loans", loans);
-                req.getRequestDispatcher("/admin/loans.jsp").forward(req, resp);
-            }
+            List<Loan> loans = loanDAO.getAllLoans();
+            req.setAttribute("loans", loans);
+            req.getRequestDispatcher("/admin/loans.jsp").forward(req, resp);
         } catch (SQLException e) {
-            throw new ServletException("Database error", e);
+            req.setAttribute("error", "Lỗi khi lấy danh sách khoản vay: " + e.getMessage());
+            req.getRequestDispatcher("/admin/loans.jsp").forward(req, resp);
         }
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        HttpSession session = req.getSession(false);
-        String contextPath = req.getContextPath();
-        if (session == null || session.getAttribute("user") == null) {
-            resp.sendRedirect(contextPath + "/login");
+        HttpSession session = req.getSession();
+        Member user = (Member) session.getAttribute("user");
+        if (user == null || !user.getRole().equals("ADMIN")) {
+            resp.sendRedirect(req.getContextPath() + "/login");
             return;
         }
 
-        String path = req.getServletPath();
+        String bookId = req.getParameter("bookId");
+        String memberId = req.getParameter("memberId");
+
         try {
-            if ("/admin/loans".equals(path) || "/member/borrow".equals(path)) {
-                int bookId = Integer.parseInt(req.getParameter("bookId"));
-                int memberId = "/member/borrow".equals(path) ?
-                        ((com.library.model.Member) session.getAttribute("user")).getId() :
-                        Integer.parseInt(req.getParameter("memberId"));
-                Loan loan = new Loan(0, bookId, memberId, LocalDate.now(), LocalDate.now().plusDays(7));
-                loanDAO.addLoan(loan);
-                resp.sendRedirect(contextPath + path);
+            Book book = bookDAO.getBookById(Integer.parseInt(bookId));
+            Member member = memberDAO.getMemberById(Integer.parseInt(memberId));
+            if (book == null || member == null) {
+                req.setAttribute("error", "Sách hoặc thành viên không tồn tại.");
+                req.getRequestDispatcher("/admin/loans.jsp").forward(req, resp);
+                return;
             }
+
+            Loan loan = new Loan(); // Sử dụng constructor mặc định
+            loan.setBookId(book.getId());
+            loan.setMemberId(member.getId());
+            loan.setBorrowDate(LocalDate.now());
+            loan.setDueDate(LocalDate.now().plusDays(14));
+            loanDAO.addLoan(loan);
+
+            List<Loan> loans = loanDAO.getAllLoans();
+            req.setAttribute("loans", loans);
+            req.getRequestDispatcher("/admin/loans.jsp").forward(req, resp);
         } catch (SQLException e) {
-            throw new ServletException("Database error", e);
+            req.setAttribute("error", "Lỗi khi thêm khoản vay: " + e.getMessage());
+            req.getRequestDispatcher("/admin/loans.jsp").forward(req, resp);
+        }
+    }
+
+    private void handleReturn(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String loanId = req.getParameter("id");
+        try {
+            Loan loan = loanDAO.getLoanById(Integer.parseInt(loanId));
+            if (loan == null) {
+                req.setAttribute("error", "Khoản vay không tồn tại.");
+            } else {
+                loan.setReturnDate(LocalDate.now());
+                loanDAO.updateLoan(loan);
+                req.setAttribute("success", "Trả sách thành công!");
+            }
+            List<Loan> loans = loanDAO.getAllLoans();
+            req.setAttribute("loans", loans);
+            req.getRequestDispatcher("/admin/loans.jsp").forward(req, resp);
+        } catch (SQLException e) {
+            req.setAttribute("error", "Lỗi khi trả sách: " + e.getMessage());
+            req.getRequestDispatcher("/admin/loans.jsp").forward(req, resp);
         }
     }
 }

@@ -11,6 +11,11 @@ public class Loan {
     private LocalDate returnDate;
     private double overdueFee;
 
+    // Constructor mặc định
+    public Loan() {
+    }
+
+    // Constructor 5 tham số
     public Loan(int id, int bookId, int memberId, LocalDate borrowDate, LocalDate dueDate) {
         this.id = id;
         this.bookId = bookId;
