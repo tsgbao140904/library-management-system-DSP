@@ -16,8 +16,8 @@
         <a class="navbar-brand" href="#">Thư viện</a>
         <div class="navbar-nav">
             <a class="nav-link" href="admin/books">Sách</a>
-            <a class="nav-link" href="admin/members">Thành Viên</a>
-            <a class="nav-link" href="admin/loans">Mượn Sách</a>
+            <a class="nav-link" href="admin/members">Thành viên</a>
+            <a class="nav-link" href="admin/loans">Mượn sách</a>
             <a class="nav-link" href="admin/reports">Báo cáo</a>
             <a class="nav-link" href="logout">Đăng xuất</a>
         </div>
@@ -44,8 +44,8 @@
             <td><%= member.getFullName() %></td>
             <td><%= member.getRole() %></td>
             <td>
-                <a href="admin/members?action=edit&id=<%= member.getId() %>" class="btn btn-sm btn-warning">Sua</a>
-                <a href="admin/members?action=delete&id=<%= member.getId() %>" class="btn btn-sm btn-danger">Xoa</a>
+                <a href="admin/members?action=edit&id=<%= member.getId() %>" class="btn btn-sm btn-warning">Sửa</a>
+                <a href="admin/members?action=delete&id=<%= member.getId() %>" class="btn btn-sm btn-danger">Xóa</a>
             </td>
         </tr>
         <% } %>
