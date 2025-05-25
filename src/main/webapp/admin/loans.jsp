@@ -13,28 +13,28 @@
 <body>
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <div class="container-fluid">
-        <a class="navbar-brand" href="#">Thu vien</a>
+        <a class="navbar-brand" href="#">Thư viện</a>
         <div class="navbar-nav">
-            <a class="nav-link" href="admin/books">Sach</a>
-            <a class="nav-link" href="admin/members">Thanh vien</a>
-            <a class="nav-link" href="admin/loans">Muon sach</a>
-            <a class="nav-link" href="admin/reports">Bao cao</a>
-            <a class="nav-link" href="logout">Dang xuat</a>
+            <a class="nav-link" href="admin/books">Sách</a>
+            <a class="nav-link" href="admin/members">Thành viên</a>
+            <a class="nav-link" href="admin/loans">Mượn sách</a>
+            <a class="nav-link" href="admin/reports">Báo cáo</a>
+            <a class="nav-link" href="logout">Đăng xuất</a>
         </div>
     </div>
 </nav>
 <div class="container mt-5">
-    <h2>Quan ly muon sach</h2>
+    <h2>Quản lý mượn sách</h2>
     <form action="admin/loans" method="post" class="mb-4">
         <div class="row">
             <div class="col">
-                <input type="number" class="form-control" name="bookId" placeholder="ID Sach" required>
+                <input type="number" class="form-control" name="bookId" placeholder="ID Sách" required>
             </div>
             <div class="col">
-                <input type="number" class="form-control" name="memberId" placeholder="ID Thanh vien" required>
+                <input type="number" class="form-control" name="memberId" placeholder="ID Thành viên" required>
             </div>
             <div class="col">
-                <button type="submit" class="btn btn-primary">Muon sach</button>
+                <button type="submit" class="btn btn-primary">Mượn sách</button>
             </div>
         </div>
     </form>
@@ -42,13 +42,13 @@
         <thead>
         <tr>
             <th>ID</th>
-            <th>ID Sach</th>
-            <th>ID Thanh vien</th>
-            <th>Ngay muon</th>
-            <th>Han tra</th>
-            <th>Ngay tra</th>
-            <th>Phi qua han</th>
-            <th>Hanh dong</th>
+            <th>ID Sách</th>
+            <th>ID Thành viên</th>
+            <th>Ngày mượn</th>
+            <th>Hạn trả</th>
+            <th>Ngày trả</th>
+            <th>Phí quá hạn</th>
+            <th>Hành động</th>
         </tr>
         </thead>
         <tbody>
@@ -60,12 +60,12 @@
             <td><%= loan.getMemberId() %></td>
             <td><%= loan.getBorrowDate() %></td>
             <td><%= loan.getDueDate() %></td>
-            <td><%= loan.getReturnDate() != null ? loan.getReturnDate() : "Chua tra" %></td>
+            <td><%= loan.getReturnDate() != null ? loan.getReturnDate() : "Chưa trả" %></td>
             <td><%= loan.getOverdueFee() %></td>
             <td>
                 <% if (loan.getReturnDate() == null) { %>
-                <a href="admin/loans?action=return&id=<%= loan.getId() %>&feeType=daily" class="btn btn-sm btn-success">Tra (Theo ngay)</a>
-                <a href="admin/loans?action=return&id=<%= loan.getId() %>&feeType=quantity" class="btn btn-sm btn-success">Tra (Theo so luong)</a>
+                <a href="admin/loans?action=return&id=<%= loan.getId() %>&feeType=daily" class="btn btn-sm btn-success">Trả (Theo ngày)</a>
+                <a href="admin/loans?action=return&id=<%= loan.getId() %>&feeType=quantity" class="btn btn-sm btn-success">Trả (Theo số lượng)</a>
                 <% } %>
             </td>
         </tr>

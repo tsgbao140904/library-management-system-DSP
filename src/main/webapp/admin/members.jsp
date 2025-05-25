@@ -13,26 +13,26 @@
 <body>
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <div class="container-fluid">
-        <a class="navbar-brand" href="#">Thu vien</a>
+        <a class="navbar-brand" href="#">Thư viện</a>
         <div class="navbar-nav">
-            <a class="nav-link" href="admin/books">Sach</a>
-            <a class="nav-link" href="admin/members">Thanh vien</a>
-            <a class="nav-link" href="admin/loans">Muon sach</a>
-            <a class="nav-link" href="admin/reports">Bao cao</a>
-            <a class="nav-link" href="logout">Dang xuat</a>
+            <a class="nav-link" href="admin/books">Sách</a>
+            <a class="nav-link" href="admin/members">Thành Viên</a>
+            <a class="nav-link" href="admin/loans">Mượn Sách</a>
+            <a class="nav-link" href="admin/reports">Báo cáo</a>
+            <a class="nav-link" href="logout">Đăng xuất</a>
         </div>
     </div>
 </nav>
 <div class="container mt-5">
-    <h2>Quan ly thanh vien</h2>
+    <h2>Quản lý thành viên</h2>
     <table class="table table-bordered">
         <thead>
         <tr>
             <th>ID</th>
-            <th>Ten dang nhap</th>
-            <th>Ho va ten</th>
-            <th>Vai tro</th>
-            <th>Hanh dong</th>
+            <th>Tên đăng nhập</th>
+            <th>Họ và tên</th>
+            <th>Vai trò</th>
+            <th>Hành động</th>
         </tr>
         </thead>
         <tbody>

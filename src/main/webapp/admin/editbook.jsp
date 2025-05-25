@@ -13,46 +13,46 @@
 <body>
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <div class="container-fluid">
-        <a class="navbar-brand" href="#">Thu vien</a>
+        <a class="navbar-brand" href="#">Thư viện</a>
         <div class="navbar-nav">
-            <a class="nav-link" href="admin/books">Sach</a>
-            <a class="nav-link" href="admin/members">Thanh vien</a>
-            <a class="nav-link" href="admin/loans">Muon sach</a>
-            <a class="nav-link" href="admin/reports">Bao cao</a>
-            <a class="nav-link" href="logout">Dang xuat</a>
+            <a class="nav-link" href="admin/books">Sách</a>
+            <a class="nav-link" href="admin/members">Thành viên</a>
+            <a class="nav-link" href="admin/loans">Mượn sách</a>
+            <a class="nav-link" href="admin/reports">Báo cáo</a>
+            <a class="nav-link" href="logout">Đăng xuất</a>
         </div>
     </div>
 </nav>
 <div class="container mt-5">
-    <h2>Sua thong tin sach</h2>
+    <h2>Sửa thông tin sách</h2>
     <% Book book = (Book) request.getAttribute("book"); %>
     <% if (book != null) { %>
     <form action="admin/books" method="post" class="w-50 mx-auto">
         <input type="hidden" name="action" value="update">
         <input type="hidden" name="id" value="<%= book.getId() %>">
         <div class="mb-3">
-            <label for="title" class="form-label">Tieu de</label>
+            <label for="title" class="form-label">Tiêu đề</label>
             <input type="text" class="form-control" id="title" name="title" value="<%= book.getTitle() %>" required>
         </div>
         <div class="mb-3">
-            <label for="author" class="form-label">Tac gia</label>
+            <label for="author" class="form-label">Tác giả</label>
             <input type="text" class="form-control" id="author" name="author" value="<%= book.getAuthor() %>" required>
         </div>
         <div class="mb-3">
-            <label for="type" class="form-label">Loai sach</label>
+            <label for="type" class="form-label">Loại sách</label>
             <select class="form-control" id="type" name="type" required>
-                <option value="Printed" <%= book.getType().equals("Printed") ? "selected" : "" %>>Sach giay</option>
-                <option value="EBook" <%= book.getType().equals("EBook") ? "selected" : "" %>>Sach dien tu</option>
+                <option value="Printed" <%= book.getType().equals("Printed") ? "selected" : "" %>>Sách giấy</option>
+                <option value="EBook" <%= book.getType().equals("EBook") ? "selected" : "" %>>Sách điện tử</option>
             </select>
         </div>
-        <button type="submit" class="btn btn-primary w-100">Cap nhat</button>
-        <a href="admin/books" class="btn btn-secondary w-100 mt-2">Quay lai</a>
+        <button type="submit" class="btn btn-primary w-100">Cập nhật</button>
+        <a href="admin/books" class="btn btn-secondary w-100 mt-2">Quay lại</a>
     </form>
     <% } else { %>
     <div class="alert alert-danger">
-        Khong tim thay sach de sua.
+        Không tìm thấy sách để sửa.
     </div>
-    <a href="admin/books" class="btn btn-secondary">Quay lai</a>
+    <a href="admin/books" class="btn btn-secondary">Quay lại</a>
     <% } %>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
