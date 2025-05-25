@@ -24,7 +24,7 @@
     </div>
 </nav>
 <div class="container mt-5">
-    <h2>Sửa thông tin thành viên</h2> <!-- Thay "Sửa thông tin thành viên" bằng "Sua thong tin thanh vien" -->
+    <h2 class="text-center">Sửa thông tin thành viên</h2> <!-- Thay "Sửa thông tin thành viên" bằng "Sua thong tin thanh vien" -->
     <% Member member = (Member) request.getAttribute("member"); %>
     <form action="admin/members" method="post" class="w-50 mx-auto">
         <input type="hidden" name="id" value="<%= member.getId() %>">

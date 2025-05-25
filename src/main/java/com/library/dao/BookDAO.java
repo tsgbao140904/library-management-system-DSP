@@ -111,4 +111,12 @@ public class BookDAO {
             stmt.executeUpdate();
         }
     }
+    public void unmarkAsFavorite(int id) throws SQLException {
+        String sql = "UPDATE books SET is_favorite = FALSE WHERE id = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            stmt.executeUpdate();
+        }
+    }
 }

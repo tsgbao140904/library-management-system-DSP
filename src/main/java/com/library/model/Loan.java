@@ -10,21 +10,11 @@ public class Loan {
     private LocalDate dueDate;
     private LocalDate returnDate;
     private double overdueFee;
+    private Book book; // Thêm thuộc tính để lưu thông tin sách
 
-    // Constructor mặc định
-    public Loan() {
-    }
+    // Constructors, getters, and setters
+    public Loan() {}
 
-    // Constructor 5 tham số
-    public Loan(int id, int bookId, int memberId, LocalDate borrowDate, LocalDate dueDate) {
-        this.id = id;
-        this.bookId = bookId;
-        this.memberId = memberId;
-        this.borrowDate = borrowDate;
-        this.dueDate = dueDate;
-    }
-
-    // Getters and setters
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
     public int getBookId() { return bookId; }
@@ -39,4 +29,6 @@ public class Loan {
     public void setReturnDate(LocalDate returnDate) { this.returnDate = returnDate; }
     public double getOverdueFee() { return overdueFee; }
     public void setOverdueFee(double overdueFee) { this.overdueFee = overdueFee; }
+    public Book getBook() { return book; } // Thêm getter
+    public void setBook(Book book) { this.book = book; } // Thêm setter
 }

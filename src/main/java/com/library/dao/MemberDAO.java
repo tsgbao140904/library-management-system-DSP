@@ -67,11 +67,39 @@ public class MemberDAO {
     }
 
     public void deleteMember(int id) throws SQLException {
-        String sql = "DELETE FROM members WHERE id = ?";
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, id);
-            stmt.executeUpdate();
+        Connection conn = null;
+        try {
+            conn = DatabaseConfig.getConnection();
+            conn.setAutoCommit(false); // Bắt đầu giao dịch
+
+            // Xóa các khoản mượn liên quan đến thành viên
+            String deleteLoansSql = "DELETE FROM loans WHERE member_id = ?";
+            try (PreparedStatement deleteLoansStmt = conn.prepareStatement(deleteLoansSql)) {
+                deleteLoansStmt.setInt(1, id);
+                deleteLoansStmt.executeUpdate();
+            }
+
+            // Xóa thành viên
+            String deleteMemberSql = "DELETE FROM members WHERE id = ?";
+            try (PreparedStatement deleteMemberStmt = conn.prepareStatement(deleteMemberSql)) {
+                deleteMemberStmt.setInt(1, id);
+                int rowsAffected = deleteMemberStmt.executeUpdate();
+                if (rowsAffected == 0) {
+                    throw new SQLException("Không tìm thấy thành viên với ID: " + id);
+                }
+            }
+
+            conn.commit(); // Commit giao dịch nếu thành công
+        } catch (SQLException e) {
+            if (conn != null) {
+                conn.rollback(); // Rollback nếu có lỗi
+            }
+            throw e;
+        } finally {
+            if (conn != null) {
+                conn.setAutoCommit(true); // Khôi phục auto-commit
+                conn.close();
+            }
         }
     }
 

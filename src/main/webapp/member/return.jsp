@@ -24,11 +24,23 @@
 </nav>
 <div class="container mt-5">
     <h2>Trả sách</h2>
+    <% if (request.getAttribute("error") != null) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <%= request.getAttribute("error") %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <% } %>
+    <% if (request.getAttribute("success") != null) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <%= request.getAttribute("success") %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <% } %>
     <table class="table table-bordered">
         <thead>
         <tr>
             <th>ID</th>
-            <th>ID Sách</th>
+            <th>Tên sách</th>
             <th>Ngày mượn</th>
             <th>Hạn trả</th>
             <th>Phí quá hạn</th>
@@ -37,12 +49,14 @@
         </thead>
         <tbody>
         <% List<Loan> loans = (List<Loan>) request.getAttribute("loans"); %>
+        <% boolean hasUnreturnedLoans = false; %>
         <% if (loans != null && !loans.isEmpty()) { %>
         <% for (Loan loan : loans) { %>
         <% if (loan.getReturnDate() == null) { %>
+        <% hasUnreturnedLoans = true; %>
         <tr>
             <td><%= loan.getId() %></td>
-            <td><%= loan.getBookId() %></td>
+            <td><%= loan.getBook() != null ? loan.getBook().getTitle() : "Không có tên" %></td>
             <td><%= loan.getBorrowDate() %></td>
             <td><%= loan.getDueDate() %></td>
             <td><%= loan.getOverdueFee() %></td>
@@ -53,7 +67,8 @@
         </tr>
         <% } %>
         <% } %>
-        <% } else { %>
+        <% } %>
+        <% if (!hasUnreturnedLoans) { %>
         <tr>
             <td colspan="6" class="text-center">Chưa có sách nào để trả.</td>
         </tr>

@@ -36,12 +36,21 @@ public class MemberServlet extends HttpServlet {
             if ("edit".equals(action)) {
                 int id = Integer.parseInt(req.getParameter("id"));
                 Member member = memberDAO.getMemberById(id);
-                req.setAttribute("member", member);
-                req.getRequestDispatcher("/admin/editmember.jsp").forward(req, resp); // Đổi thành editmember.jsp
+                if (member == null) {
+                    req.setAttribute("error", "Không tìm thấy thành viên với ID: " + id);
+                } else {
+                    req.setAttribute("member", member);
+                }
+                req.getRequestDispatcher("/admin/editmember.jsp").forward(req, resp);
                 return;
             } else if ("delete".equals(action)) {
                 int id = Integer.parseInt(req.getParameter("id"));
-                memberDAO.deleteMember(id);
+                try {
+                    memberDAO.deleteMember(id);
+                    req.setAttribute("success", "Xóa thành viên thành công!");
+                } catch (SQLException e) {
+                    req.setAttribute("error", "Lỗi khi xóa thành viên: " + e.getMessage());
+                }
             }
 
             List<Member> members = memberDAO.getAllMembers();
@@ -73,6 +82,15 @@ public class MemberServlet extends HttpServlet {
             resp.sendRedirect(contextPath + "/admin/members");
         } catch (SQLException e) {
             throw new ServletException("Database error", e);
+        } catch (NumberFormatException e) {
+            req.setAttribute("error", "ID không hợp lệ: " + e.getMessage());
+            try {
+                List<Member> members = memberDAO.getAllMembers();
+                req.setAttribute("members", members);
+                req.getRequestDispatcher("/admin/members.jsp").forward(req, resp);
+            } catch (SQLException ex) {
+                throw new ServletException("Database error", ex);
+            }
         }
     }
 }

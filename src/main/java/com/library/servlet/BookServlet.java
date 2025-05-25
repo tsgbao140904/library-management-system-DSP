@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 
-@WebServlet("/admin/books")
+@WebServlet({"/admin/books", "/admin/toggle-favorite"})
 public class BookServlet extends HttpServlet {
     private BookDAO bookDAO;
 
@@ -41,7 +41,7 @@ public class BookServlet extends HttpServlet {
                 int id = Integer.parseInt(req.getParameter("id"));
                 Book book = bookDAO.getBookById(id);
                 if (book == null) {
-                    req.setAttribute("error", "Khong tim thay sach voi ID: " + id);
+                    req.setAttribute("error", "Không tìm thấy sách với ID: " + id);
                     List<Book> books = bookDAO.getAllBooks();
                     req.setAttribute("books", books);
                     req.getRequestDispatcher("/admin/books.jsp").forward(req, resp);
@@ -53,16 +53,18 @@ public class BookServlet extends HttpServlet {
             } else if ("delete".equals(action)) {
                 int id = Integer.parseInt(req.getParameter("id"));
                 bookDAO.deleteBook(id);
+                session.setAttribute("success", "Xóa sách thành công!");
             } else if ("favorite".equals(action)) {
                 int id = Integer.parseInt(req.getParameter("id"));
                 bookDAO.markAsFavorite(id);
+                session.setAttribute("success", "Đã đánh dấu sách là yêu thích!");
             }
 
             List<Book> books = bookDAO.getAllBooks();
             req.setAttribute("books", books);
             req.getRequestDispatcher("/admin/books.jsp").forward(req, resp);
         } catch (SQLException e) {
-            req.setAttribute("error", "Loi: " + e.getMessage());
+            req.setAttribute("error", "Lỗi: " + e.getMessage());
             try {
                 List<Book> books = bookDAO.getAllBooks();
                 req.setAttribute("books", books);
@@ -82,32 +84,65 @@ public class BookServlet extends HttpServlet {
             return;
         }
 
-        String action = req.getParameter("action");
+        String path = req.getServletPath();
         try {
-            if ("update".equals(action)) {
-                int id = Integer.parseInt(req.getParameter("id"));
+            if ("/admin/books".equals(path)) {
+                String action = req.getParameter("action");
+                if ("update".equals(action)) {
+                    int id = Integer.parseInt(req.getParameter("id"));
+                    String title = req.getParameter("title");
+                    String author = req.getParameter("author");
+                    String type = req.getParameter("type");
+
+                    // Sử dụng factory để tạo đối tượng Book phù hợp
+                    BookFactory factory = type.equals("Printed") ? new AcademicBookFactory() : new EntertainmentBookFactory();
+                    Book book = factory.createBook(id, title, author); // ID được truyền vào để cập nhật
+                    bookDAO.updateBook(book);
+                    session.setAttribute("success", "Cập nhật sách thành công!");
+                    resp.sendRedirect(contextPath + "/admin/books");
+                    return;
+                }
+
                 String title = req.getParameter("title");
                 String author = req.getParameter("author");
                 String type = req.getParameter("type");
 
-                // Sử dụng factory để tạo đối tượng Book phù hợp
                 BookFactory factory = type.equals("Printed") ? new AcademicBookFactory() : new EntertainmentBookFactory();
-                Book book = factory.createBook(id, title, author); // ID được truyền vào để cập nhật
-                bookDAO.updateBook(book);
+                Book book = factory.createBook(0, title, author); // ID = 0 cho sách mới
+                bookDAO.addBook(book);
+                session.setAttribute("success", "Thêm sách thành công!");
                 resp.sendRedirect(contextPath + "/admin/books");
-                return;
+            } else if ("/admin/toggle-favorite".equals(path)) {
+                String bookId = req.getParameter("bookId");
+                if (bookId != null) {
+                    int bookIdInt = Integer.parseInt(bookId);
+                    Book book = bookDAO.getBookById(bookIdInt);
+                    if (book != null) {
+                        if (book instanceof FavoriteBookDecorator) {
+                            bookDAO.unmarkAsFavorite(bookIdInt);
+                            session.setAttribute("success", "Đã hủy yêu thích sách!");
+                        } else {
+                            bookDAO.markAsFavorite(bookIdInt);
+                            session.setAttribute("success", "Đã đánh dấu sách là yêu thích!");
+                        }
+                    } else {
+                        req.setAttribute("error", "Sách không tồn tại.");
+                    }
+                    List<Book> books = bookDAO.getAllBooks();
+                    req.setAttribute("books", books);
+                    req.getRequestDispatcher("/admin/books.jsp").forward(req, resp);
+                }
             }
-
-            String title = req.getParameter("title");
-            String author = req.getParameter("author");
-            String type = req.getParameter("type");
-
-            BookFactory factory = type.equals("Printed") ? new AcademicBookFactory() : new EntertainmentBookFactory();
-            Book book = factory.createBook(0, title, author); // ID = 0 cho sách mới
-            bookDAO.addBook(book);
-            resp.sendRedirect(contextPath + "/admin/books");
         } catch (SQLException e) {
-            throw new ServletException("Database error", e);
+            req.setAttribute("error", "Lỗi khi xử lý yêu cầu: " + e.getMessage());
+            List<Book> books;
+            try {
+                books = bookDAO.getAllBooks();
+            } catch (SQLException ex) {
+                throw new ServletException("Database error", ex);
+            }
+            req.setAttribute("books", books);
+            req.getRequestDispatcher("/admin/books.jsp").forward(req, resp);
         }
     }
 }

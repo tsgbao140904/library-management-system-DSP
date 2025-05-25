@@ -16,6 +16,7 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 
 @WebServlet("/admin/loans")
@@ -23,6 +24,7 @@ public class LoanServlet extends HttpServlet {
     private LoanDAO loanDAO;
     private BookDAO bookDAO;
     private MemberDAO memberDAO;
+    private static final int ITEMS_PER_PAGE = 10; // Số lượng khoản mượn trên mỗi trang
 
     @Override
     public void init() {
@@ -47,11 +49,48 @@ public class LoanServlet extends HttpServlet {
         }
 
         try {
-            List<Loan> loans = loanDAO.getAllLoans();
-            req.setAttribute("loans", loans);
+            // Lấy toàn bộ danh sách khoản mượn
+            List<Loan> allLoans = loanDAO.getAllLoans();
+
+            // Sắp xếp: Ưu tiên chưa trả (returnDate == null) lên đầu, sắp xếp theo borrowDate giảm dần
+            // Các khoản đã trả (returnDate != null) xếp sau, sắp xếp theo returnDate giảm dần
+            allLoans.sort(Comparator.comparing(
+                            Loan::getReturnDate, Comparator.nullsFirst(Comparator.naturalOrder()) // Ưu tiên returnDate == null lên đầu
+                    ).thenComparing(Loan::getBorrowDate, Comparator.reverseOrder()) // Sắp xếp borrowDate giảm dần cho chưa trả
+                    .thenComparing(Loan::getReturnDate, Comparator.nullsLast(Comparator.reverseOrder()))); // Sắp xếp returnDate giảm dần cho đã trả
+
+            // Lấy tham số trang từ request, mặc định là 1
+            int page = 1;
+            String pageParam = req.getParameter("page");
+            if (pageParam != null && !pageParam.isEmpty()) {
+                try {
+                    page = Integer.parseInt(pageParam);
+                    if (page < 1) page = 1;
+                } catch (NumberFormatException e) {
+                    page = 1;
+                }
+            }
+
+            // Tính toán phân trang
+            int totalItems = allLoans.size();
+            int totalPages = (int) Math.ceil((double) totalItems / ITEMS_PER_PAGE);
+            if (page > totalPages && totalPages > 0) page = totalPages;
+
+            // Lấy danh sách khoản mượn cho trang hiện tại
+            int start = (page - 1) * ITEMS_PER_PAGE;
+            int end = Math.min(start + ITEMS_PER_PAGE, totalItems);
+            List<Loan> loansForPage = (totalItems > 0) ? allLoans.subList(start, end) : List.of();
+
+            // Truyền thông tin phân trang và danh sách khoản mượn cho JSP
+            req.setAttribute("loans", loansForPage);
+            req.setAttribute("currentPage", page);
+            req.setAttribute("totalPages", totalPages);
             req.getRequestDispatcher("/admin/loans.jsp").forward(req, resp);
         } catch (SQLException e) {
             req.setAttribute("error", "Lỗi khi lấy danh sách khoản vay: " + e.getMessage());
+            req.setAttribute("loans", List.of());
+            req.setAttribute("currentPage", 1);
+            req.setAttribute("totalPages", 1);
             req.getRequestDispatcher("/admin/loans.jsp").forward(req, resp);
         }
     }
@@ -84,9 +123,8 @@ public class LoanServlet extends HttpServlet {
             loan.setDueDate(LocalDate.now().plusDays(14));
             loanDAO.addLoan(loan);
 
-            List<Loan> loans = loanDAO.getAllLoans();
-            req.setAttribute("loans", loans);
-            req.getRequestDispatcher("/admin/loans.jsp").forward(req, resp);
+            // Sau khi thêm, chuyển hướng để áp dụng phân trang và sắp xếp
+            resp.sendRedirect(req.getContextPath() + "/admin/loans");
         } catch (SQLException e) {
             req.setAttribute("error", "Lỗi khi thêm khoản vay: " + e.getMessage());
             req.getRequestDispatcher("/admin/loans.jsp").forward(req, resp);
@@ -104,8 +142,23 @@ public class LoanServlet extends HttpServlet {
                 loanDAO.updateLoan(loan);
                 req.setAttribute("success", "Trả sách thành công!");
             }
-            List<Loan> loans = loanDAO.getAllLoans();
-            req.setAttribute("loans", loans);
+
+            // Lấy lại danh sách và sắp xếp
+            List<Loan> allLoans = loanDAO.getAllLoans();
+            allLoans.sort(Comparator.comparing(
+                            Loan::getReturnDate, Comparator.nullsFirst(Comparator.naturalOrder())
+                    ).thenComparing(Loan::getBorrowDate, Comparator.reverseOrder())
+                    .thenComparing(Loan::getReturnDate, Comparator.nullsLast(Comparator.reverseOrder())));
+
+            int totalItems = allLoans.size();
+            int totalPages = (int) Math.ceil((double) totalItems / ITEMS_PER_PAGE);
+            int page = 1; // Mặc định quay về trang 1 sau khi trả
+            int start = (page - 1) * ITEMS_PER_PAGE;
+            int end = Math.min(start + ITEMS_PER_PAGE, totalItems);
+            List<Loan> loansForPage = (totalItems > 0) ? allLoans.subList(start, end) : List.of();
+            req.setAttribute("loans", loansForPage);
+            req.setAttribute("currentPage", page);
+            req.setAttribute("totalPages", totalPages);
             req.getRequestDispatcher("/admin/loans.jsp").forward(req, resp);
         } catch (SQLException e) {
             req.setAttribute("error", "Lỗi khi trả sách: " + e.getMessage());

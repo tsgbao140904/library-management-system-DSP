@@ -24,4 +24,13 @@ public class FavoriteBookDecorator extends BookDecorator {
             return "Error marking book as favorite: " + e.getMessage();
         }
     }
+    public String unmarkAsFavorite() {
+        try {
+            BookDAO bookDAO = new BookDAO();
+            bookDAO.unmarkAsFavorite(decoratedBook.getId());
+            return "Book '" + decoratedBook.getTitle() + "' has been unmarked as favorite.";
+        } catch (SQLException e) {
+            return "Error unmarking book as favorite: " + e.getMessage();
+        }
+    }
 }

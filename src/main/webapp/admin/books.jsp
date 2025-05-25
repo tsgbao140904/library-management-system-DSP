@@ -78,9 +78,14 @@
             <td><%= book.getType() %></td>
             <td><%= book instanceof com.library.model.decorator.FavoriteBookDecorator ? "Có" : "Không" %></td>
             <td>
+                <form action="${pageContext.request.contextPath}/admin/toggle-favorite" method="post" style="display:inline;">
+                    <input type="hidden" name="bookId" value="<%= book.getId() %>">
+                    <button type="submit" class="btn btn-sm <%= (book instanceof com.library.model.decorator.FavoriteBookDecorator) ? "btn-danger" : "btn-success" %>">
+                        <%= (book instanceof com.library.model.decorator.FavoriteBookDecorator) ? "Hủy yêu thích" : "Yêu thích" %>
+                    </button>
+                </form>
                 <a href="${pageContext.request.contextPath}/admin/books?action=edit&id=<%= book.getId() %>" class="btn btn-sm btn-warning">Sửa</a>
                 <a href="${pageContext.request.contextPath}/admin/books?action=delete&id=<%= book.getId() %>" class="btn btn-sm btn-danger">Xóa</a>
-                <a href="${pageContext.request.contextPath}/admin/books?action=favorite&id=<%= book.getId() %>" class="btn btn-sm btn-info">Yêu thích</a>
             </td>
         </tr>
         <% } %>
@@ -94,5 +99,3 @@
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="${pageContext.request.contextPath}/js/script.js"></script>
-</body>
-</html>

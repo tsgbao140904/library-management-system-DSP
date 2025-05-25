@@ -54,6 +54,15 @@ public class MemberDashboardServlet extends HttpServlet {
                     return;
                 }
                 List<Loan> loans = loanDAO.getLoansByMember(((Member) session.getAttribute("user")).getId());
+                // Thêm thông tin sách cho từng khoản mượn
+                for (Loan loan : loans) {
+                    try {
+                        Book book = bookDAO.getBookById(loan.getBookId());
+                        loan.setBook(book);
+                    } catch (SQLException e) {
+                        e.printStackTrace(); // Xử lý lỗi theo cách phù hợp
+                    }
+                }
                 req.setAttribute("loans", loans);
                 req.getRequestDispatcher("/member/return.jsp").forward(req, resp);
             }
@@ -122,7 +131,7 @@ public class MemberDashboardServlet extends HttpServlet {
         } catch (IllegalArgumentException e) {
             req.setAttribute("error", e.getMessage());
             try {
-                List<Book> books = bookDAO.getAllBooks(); // Dòng 109
+                List<Book> books = bookDAO.getAllBooks();
                 req.setAttribute("books", books);
                 req.getRequestDispatcher("/member/borrow.jsp").forward(req, resp);
             } catch (SQLException ex) {
@@ -148,12 +157,29 @@ public class MemberDashboardServlet extends HttpServlet {
                 req.setAttribute("success", "Trả sách thành công!");
             }
             loans = loanDAO.getLoansByMember(user.getId());
+            // Thêm thông tin sách cho từng khoản mượn
+            for (Loan l : loans) {
+                try {
+                    Book book = bookDAO.getBookById(l.getBookId());
+                    l.setBook(book);
+                } catch (SQLException e) {
+                    e.printStackTrace(); // Xử lý lỗi theo cách phù hợp
+                }
+            }
             req.setAttribute("loans", loans);
             req.getRequestDispatcher("/member/return.jsp").forward(req, resp);
         } catch (SQLException e) {
             req.setAttribute("error", "Lỗi khi trả sách: " + e.getMessage());
             try {
                 loans = loanDAO.getLoansByMember(user.getId());
+                for (Loan l : loans) {
+                    try {
+                        Book book = bookDAO.getBookById(l.getBookId());
+                        l.setBook(book);
+                    } catch (SQLException ex) {
+                        e.printStackTrace();
+                    }
+                }
                 req.setAttribute("loans", loans);
             } catch (SQLException ex) {
                 req.setAttribute("error", req.getAttribute("error") + ". Không thể tải danh sách khoản vay: " + ex.getMessage());

@@ -5,10 +5,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quan ly muon sach</title>
+    <title>Quản lý mượn sách</title>
     <base href="${pageContext.request.contextPath}/">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
+    <style>
+        .pagination {
+            margin-top: 1rem;
+            justify-content: center;
+        }
+    </style>
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
@@ -25,6 +31,19 @@
 </nav>
 <div class="container mt-5">
     <h2>Quản lý mượn sách</h2>
+    <% if (request.getAttribute("error") != null) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <%= request.getAttribute("error") %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <% } %>
+    <% if (session.getAttribute("success") != null) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <%= session.getAttribute("success") %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <% session.removeAttribute("success"); %>
+    <% } %>
     <form action="admin/loans" method="post" class="mb-4">
         <div class="row">
             <div class="col">
@@ -53,6 +72,7 @@
         </thead>
         <tbody>
         <% List<Loan> loans = (List<Loan>) request.getAttribute("loans"); %>
+        <% if (loans != null && !loans.isEmpty()) { %>
         <% for (Loan loan : loans) { %>
         <tr>
             <td><%= loan.getId() %></td>
@@ -70,8 +90,36 @@
             </td>
         </tr>
         <% } %>
+        <% } else { %>
+        <tr>
+            <td colspan="8" class="text-center">Không có khoản mượn nào.</td>
+        </tr>
+        <% } %>
         </tbody>
     </table>
+    <% Integer currentPage = (Integer) request.getAttribute("currentPage"); %>
+    <% Integer totalPages = (Integer) request.getAttribute("totalPages"); %>
+    <% if (totalPages != null && totalPages > 1) { %>
+    <nav aria-label="Page navigation">
+        <ul class="pagination">
+            <% if (currentPage > 1) { %>
+            <li class="page-item">
+                <a class="page-link" href="admin/loans?page=<%= currentPage - 1 %>">Trước</a>
+            </li>
+            <% } %>
+            <% for (int i = 1; i <= totalPages; i++) { %>
+            <li class="page-item <%= (i == currentPage) ? "active" : "" %>">
+                <a class="page-link" href="admin/loans?page=<%= i %>"><%= i %></a>
+            </li>
+            <% } %>
+            <% if (currentPage < totalPages) { %>
+            <li class="page-item">
+                <a class="page-link" href="admin/loans?page=<%= currentPage + 1 %>">Sau</a>
+            </li>
+            <% } %>
+        </ul>
+    </nav>
+    <% } %>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

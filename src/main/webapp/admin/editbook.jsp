@@ -24,7 +24,7 @@
     </div>
 </nav>
 <div class="container mt-5">
-    <h2>Sửa thông tin sách</h2>
+    <h2 class="text-center">Sửa thông tin sách</h2>
     <% Book book = (Book) request.getAttribute("book"); %>
     <% if (book != null) { %>
     <form action="admin/books" method="post" class="w-50 mx-auto">
