@@ -41,3 +41,6 @@ ALTER TABLE loans
         FOREIGN KEY (book_id)
             REFERENCES books (id)
             ON DELETE CASCADE;
+
+-- Truy vấn
+SELECT * FROM loans WHERE return_date IS NULL;
