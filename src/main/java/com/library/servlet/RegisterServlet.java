@@ -47,7 +47,7 @@ public class RegisterServlet extends HttpServlet {
 
             // Thông báo thành công và chuyển hướng về trang đăng nhập
             req.setAttribute("success", "Đăng ký thành công! Vui lòng đăng nhập.");
-            req.getRequestDispatcher("/register.jsp").forward(req, resp);
+            req.getRequestDispatcher("/login.jsp").forward(req, resp);
         } catch (SQLException e) {
             req.setAttribute("error", "Lỗi hệ thống: " + e.getMessage());
             req.getRequestDispatcher("/register.jsp").forward(req, resp);
