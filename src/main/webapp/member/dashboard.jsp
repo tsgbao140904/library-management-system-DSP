@@ -24,6 +24,13 @@
 </nav>
 <div class="container mt-5">
     <h2>Danh sách sách</h2>
+    <% if (session.getAttribute("success") != null) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert" id="successAlert">
+        <%= session.getAttribute("success") %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <% session.removeAttribute("success"); %>
+    <% } %>
     <table class="table table-bordered">
         <thead>
         <tr>
@@ -55,5 +62,6 @@
     </table>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/script.js"></script>
 </body>
 </html>

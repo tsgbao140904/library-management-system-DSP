@@ -7,6 +7,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -45,9 +46,10 @@ public class RegisterServlet extends HttpServlet {
             Member newMember = new Member(0, username, password, fullName, "MEMBER");
             memberDAO.addMember(newMember);
 
-            // Thông báo thành công và chuyển hướng về trang đăng nhập
-            req.setAttribute("success", "Đăng ký thành công! Vui lòng đăng nhập.");
-            req.getRequestDispatcher("/login.jsp").forward(req, resp);
+            // Đặt thông báo thành công vào session và redirect
+            HttpSession session = req.getSession();
+            session.setAttribute("success", "Đăng ký thành công! Vui lòng đăng nhập.");
+            resp.sendRedirect(contextPath + "/login");
         } catch (SQLException e) {
             req.setAttribute("error", "Lỗi hệ thống: " + e.getMessage());
             req.getRequestDispatcher("/register.jsp").forward(req, resp);

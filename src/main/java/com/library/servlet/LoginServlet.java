@@ -31,24 +31,28 @@ public class LoginServlet extends HttpServlet {
         String username = req.getParameter("username");
         String password = req.getParameter("password");
         String contextPath = req.getContextPath();
+        HttpSession session = req.getSession();
 
         try {
             Member member = memberDAO.getMemberByUsername(username);
             if (member != null && member.getPassword().equals(password)) {
-                HttpSession session = req.getSession();
                 session.setAttribute("user", member);
+                // Thêm thông báo thành công
+                session.setAttribute("success", "Đăng nhập thành công!");
+                // Xóa thông báo lỗi nếu có
+                session.removeAttribute("error");
                 if (member.getRole().equals("ADMIN")) {
                     resp.sendRedirect(contextPath + "/admin/books");
                 } else {
                     resp.sendRedirect(contextPath + "/member/dashboard");
                 }
             } else {
-                req.setAttribute("error", "Sai tên đăng nhập hoặc mật khẩu.");
-                req.getRequestDispatcher("/login.jsp").forward(req, resp);
+                session.setAttribute("error", "Sai tên đăng nhập hoặc mật khẩu.");
+                resp.sendRedirect(contextPath + "/login");
             }
         } catch (SQLException e) {
-            req.setAttribute("error", "Lỗi hệ thống: " + e.getMessage());
-            req.getRequestDispatcher("/login.jsp").forward(req, resp);
+            session.setAttribute("error", "Lỗi hệ thống: " + e.getMessage());
+            resp.sendRedirect(contextPath + "/login");
         }
     }
 }

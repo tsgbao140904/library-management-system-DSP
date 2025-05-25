@@ -5,23 +5,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Đăng ký</title>
+    <base href="${pageContext.request.contextPath}/">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="${pageContext.request.contextPath}/css/style.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
 </head>
 <body>
 <div class="container mt-5">
     <h2 class="text-center">Đăng ký tài khoản</h2>
-    <form action="${pageContext.request.contextPath}/register" method="post" class="w-50 mx-auto">
-        <% if (request.getAttribute("error") != null) { %>
-        <div class="alert alert-danger">
-            <%= request.getAttribute("error") %>
-        </div>
-        <% } %>
-        <% if (request.getAttribute("success") != null) { %>
-        <div class="alert alert-success">
-            <%= request.getAttribute("success") %>
-        </div>
-        <% } %>
+    <% if (request.getAttribute("error") != null) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert" id="errorAlert">
+        <%= request.getAttribute("error") %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <% } %>
+    <% if (request.getAttribute("success") != null) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert" id="successAlert">
+        <%= request.getAttribute("success") %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <% } %>
+    <form action="register" method="post" class="w-50 mx-auto">
         <div class="mb-3">
             <label for="username" class="form-label">Tên đăng nhập</label>
             <input type="text" class="form-control" id="username" name="username" required>
@@ -39,5 +42,6 @@
     </form>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/script.js"></script>
 </body>
 </html>
