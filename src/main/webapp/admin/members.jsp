@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quan ly thanh vien</title>
+    <title>Quản lý thành viên</title>
     <base href="${pageContext.request.contextPath}/">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
@@ -25,6 +25,12 @@
 </nav>
 <div class="container mt-5">
     <h2>Quản lý thành viên</h2>
+    <% if (request.getAttribute("error") != null) { %>
+    <div class="alert alert-danger"><%= request.getAttribute("error") %></div>
+    <% } %>
+    <% if (request.getAttribute("success") != null) { %>
+    <div class="alert alert-success"><%= request.getAttribute("success") %></div>
+    <% } %>
     <table class="table table-bordered">
         <thead>
         <tr>
