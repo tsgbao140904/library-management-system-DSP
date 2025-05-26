@@ -42,5 +42,9 @@ ALTER TABLE loans
             REFERENCES books (id)
             ON DELETE CASCADE;
 
+-- Test trễ hạn sách
+INSERT INTO loans (book_id, member_id, borrow_date, due_date, return_date, overdue_fee)
+VALUES (13, 2, '2025-05-10', '2025-05-20', NULL, 0.0);
+
 -- Truy vấn
 SELECT * FROM loans WHERE return_date IS NULL;
