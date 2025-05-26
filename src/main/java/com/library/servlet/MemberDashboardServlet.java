@@ -53,11 +53,14 @@ public class MemberDashboardServlet extends HttpServlet {
                     handleReturn(req, resp);
                     return;
                 }
-                List<Loan> loans = loanDAO.getLoansByMember(((Member) session.getAttribute("user")).getId());
+                Member member = (Member) session.getAttribute("user");
+                List<Loan> loans = loanDAO.getLoansByMember(member.getId());
                 for (Loan loan : loans) {
                     try {
                         Book book = bookDAO.getBookById(loan.getBookId());
                         loan.setBook(book);
+                        // Không gọi calculateOverdueFee() để giữ giá trị từ DB
+                        // Giá trị overdue_fee đã được lấy từ loanDAO.getLoansByMember()
                     } catch (SQLException e) {
                         e.printStackTrace();
                     }
@@ -141,28 +144,27 @@ public class MemberDashboardServlet extends HttpServlet {
 
     private void handleReturn(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String loanId = req.getParameter("id");
-        String feeType = req.getParameter("feeType"); // Lấy loại phí (daily hoặc quantity)
-        HttpSession session = req.getSession();
-        Member user = (Member) session.getAttribute("user");
-        List<Loan> loans = null;
+        String feeType = req.getParameter("feeType"); // Lấy chiến lược phí từ giao diện
         try {
             Loan loan = loanDAO.getLoanById(Integer.parseInt(loanId));
-            if (loan == null || loan.getMemberId() != user.getId()) {
-                req.setAttribute("error", "Khoản vay không tồn tại hoặc không thuộc về bạn.");
+            if (loan == null) {
+                req.setAttribute("error", "Khoản vay không tồn tại.");
             } else {
-                LocalDate returnDate = LocalDate.now();
-                loan.setReturnDate(returnDate);
-                // Chọn chiến lược tính phí dựa trên feeType
-                loan.setFeeStrategy(feeType);
-                loan.calculateOverdueFee();
-                loanDAO.updateLoan(loan);
-                req.setAttribute("success", "Trả sách thành công! Phí trễ hạn: " + loan.getOverdueFee() + " USD");
+                loan.setReturnDate(LocalDate.now()); // Đặt ngày trả là ngày hiện tại (27/05/2025)
+                loan.setFeeStrategy(feeType); // Áp dụng chiến lược phí từ giao diện
+                loan.calculateOverdueFee(); // Tính lại phí dựa trên chiến lược mới
+                loanDAO.updateLoan(loan); // Lưu cả return_date và overdue_fee
+                String strategyDisplay = "daily".equalsIgnoreCase(loan.getFeeStrategy()) ? "Theo ngày" : "Theo số lượng";
+                req.setAttribute("success", "Trả sách thành công! Phí trễ hạn: " + loan.getOverdueFee() + " USD (" + strategyDisplay + ")");
             }
-            loans = loanDAO.getLoansByMember(user.getId());
+
+            Member member = (Member) req.getSession().getAttribute("user");
+            List<Loan> loans = loanDAO.getLoansByMember(member.getId());
             for (Loan l : loans) {
                 try {
                     Book book = bookDAO.getBookById(l.getBookId());
                     l.setBook(book);
+                    // Không tính lại overdue_fee, giữ giá trị từ DB
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
@@ -171,21 +173,6 @@ public class MemberDashboardServlet extends HttpServlet {
             req.getRequestDispatcher("/member/return.jsp").forward(req, resp);
         } catch (SQLException e) {
             req.setAttribute("error", "Lỗi khi trả sách: " + e.getMessage());
-            try {
-                loans = loanDAO.getLoansByMember(user.getId());
-                for (Loan l : loans) {
-                    try {
-                        Book book = bookDAO.getBookById(l.getBookId());
-                        l.setBook(book);
-                    } catch (SQLException ex) {
-                        e.printStackTrace();
-                    }
-                }
-                req.setAttribute("loans", loans);
-            } catch (SQLException ex) {
-                req.setAttribute("error", req.getAttribute("error") + ". Không thể tải danh sách khoản vay: " + ex.getMessage());
-                req.setAttribute("loans", null);
-            }
             req.getRequestDispatcher("/member/return.jsp").forward(req, resp);
         }
     }

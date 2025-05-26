@@ -10,14 +10,17 @@ public class DailyFeeCalculator implements FeeCalculator {
 
     @Override
     public double calculateFee(Loan loan) {
-        if (loan.getReturnDate() == null) {
-            LocalDate dueDate = loan.getDueDate();
-            LocalDate currentDate = LocalDate.now();
-            if (currentDate.isAfter(dueDate)) {
-                long daysOverdue = ChronoUnit.DAYS.between(dueDate, currentDate);
-                return daysOverdue * FEE_PER_DAY;
-            }
+        LocalDate dueDate = loan.getDueDate();
+        if (dueDate == null) {
+            return 0.0;
         }
-        return 0.0;
+
+        LocalDate endDate = loan.getReturnDate() != null ? loan.getReturnDate() : LocalDate.now();
+        if (endDate.isBefore(dueDate) || endDate.isEqual(dueDate)) {
+            return 0.0; // Không tính phí nếu trả trước hoặc đúng hạn
+        }
+
+        long daysOverdue = ChronoUnit.DAYS.between(dueDate, endDate);
+        return daysOverdue * FEE_PER_DAY;
     }
 }

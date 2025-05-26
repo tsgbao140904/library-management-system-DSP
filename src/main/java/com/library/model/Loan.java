@@ -16,10 +16,12 @@ public class Loan {
     private LocalDate returnDate;
     private double overdueFee;
     private Book book;
-    private FeeContext feeContext; // Sử dụng FeeContext để quản lý chiến lược
+    private FeeContext feeContext; // Quản lý chiến lược tính phí
+    private String feeStrategy; // Lưu chiến lược để đồng bộ với DB
 
     public Loan() {
         this.feeContext = new FeeContext(new DailyFeeCalculator()); // Mặc định là DailyFeeCalculator
+        this.feeStrategy = "daily"; // Mặc định
     }
 
     // Getters and setters
@@ -44,6 +46,7 @@ public class Loan {
     public void setOverdueFee(double overdueFee) { this.overdueFee = overdueFee; }
     public Book getBook() { return book; }
     public void setBook(Book book) { this.book = book; }
+    public String getFeeStrategy() { return feeStrategy; }
 
     // Phương thức tính phí trễ hạn
     public void calculateOverdueFee() {
@@ -56,8 +59,9 @@ public class Loan {
 
     // Setter để chọn chiến lược tính phí
     public void setFeeStrategy(String feeType) {
+        this.feeStrategy = feeType != null ? feeType.toLowerCase() : "daily";
         FeeCalculator calculator;
-        switch (feeType != null ? feeType.toLowerCase() : "daily") {
+        switch (this.feeStrategy) {
             case "daily":
                 calculator = new DailyFeeCalculator();
                 break;
@@ -65,9 +69,10 @@ public class Loan {
                 calculator = new QuantityFeeCalculator();
                 break;
             default:
-                calculator = new DailyFeeCalculator(); // Mặc định
+                calculator = new DailyFeeCalculator();
                 break;
         }
         this.feeContext.setFeeCalculator(calculator);
+        calculateOverdueFee(); // Tính lại phí ngay sau khi thay đổi chiến lược
     }
 }

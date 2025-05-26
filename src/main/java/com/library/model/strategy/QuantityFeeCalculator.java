@@ -10,12 +10,16 @@ public class QuantityFeeCalculator implements FeeCalculator {
 
     @Override
     public double calculateFee(Loan loan) {
-        if (loan.getReturnDate() == null && loan.getDueDate() != null) {
-            LocalDate currentDate = DateProvider.getInstance().getCurrentDate();
-            if (currentDate.isAfter(loan.getDueDate())) {
-                return FEE_PER_BOOK; // Phí 5 USD khi sách quá hạn
-            }
+        LocalDate dueDate = loan.getDueDate();
+        if (dueDate == null) {
+            return 0.0;
         }
-        return 0.0; // Không có phí nếu chưa quá hạn hoặc đã trả
+
+        LocalDate endDate = loan.getReturnDate() != null ? loan.getReturnDate() : DateProvider.getInstance().getCurrentDate();
+        if (endDate.isBefore(dueDate) || endDate.isEqual(dueDate)) {
+            return 0.0; // Không tính phí nếu trả trước hoặc đúng hạn
+        }
+
+        return FEE_PER_BOOK; // Phí 5 USD nếu quá hạn
     }
 }

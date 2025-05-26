@@ -67,6 +67,7 @@
             <th>Hạn trả</th>
             <th>Ngày trả</th>
             <th>Phí quá hạn</th>
+            <th>Chiến lược phí</th>
             <th>Hành động</th>
         </tr>
         </thead>
@@ -81,18 +82,27 @@
             <td><%= loan.getBorrowDate() %></td>
             <td><%= loan.getDueDate() %></td>
             <td><%= loan.getReturnDate() != null ? loan.getReturnDate() : "Chưa trả" %></td>
-            <td><%= loan.getOverdueFee() %></td>
+            <td><%= loan.getOverdueFee() %> USD</td>
             <td>
                 <% if (loan.getReturnDate() == null) { %>
-                <a href="admin/loans?action=return&id=<%= loan.getId() %>&feeType=daily" class="btn btn-sm btn-success">Trả (Theo ngày)</a>
-                <a href="admin/loans?action=return&id=<%= loan.getId() %>&feeType=quantity" class="btn btn-sm btn-success">Trả (Theo số lượng)</a>
+                <select class="form-select fee-strategy" data-loan-id="<%= loan.getId() %>">
+                    <option value="daily" <%= "daily".equals(loan.getFeeStrategy()) ? "selected" : "" %>>Theo ngày</option>
+                    <option value="quantity" <%= "quantity".equals(loan.getFeeStrategy()) ? "selected" : "" %>>Theo số lượng</option>
+                </select>
+                <% } else { %>
+                <%= loan.getFeeStrategy() != null ? loan.getFeeStrategy() : "Chưa tính" %>
+                <% } %>
+            </td>
+            <td>
+                <% if (loan.getReturnDate() == null) { %>
+                <a href="admin/loans?action=return&id=<%= loan.getId() %>" class="btn btn-sm btn-success">Trả</a>
                 <% } %>
             </td>
         </tr>
         <% } %>
         <% } else { %>
         <tr>
-            <td colspan="8" class="text-center">Không có khoản mượn nào.</td>
+            <td colspan="9" class="text-center">Không có khoản mượn nào.</td>
         </tr>
         <% } %>
         </tbody>
@@ -122,5 +132,30 @@
     <% } %>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('.fee-strategy').change(function() {
+            var loanId = $(this).data('loan-id');
+            var feeStrategy = $(this).val();
+            $.ajax({
+                url: 'admin/loans',
+                type: 'POST',
+                data: {
+                    action: 'updateFeeStrategy',
+                    loanId: loanId,
+                    feeStrategy: feeStrategy
+                },
+                success: function(response) {
+                    alert('Cập nhật chiến lược phí thành công!');
+                    location.reload(); // Làm mới trang để hiển thị phí mới
+                },
+                error: function(xhr, status, error) {
+                    alert('Lỗi khi cập nhật chiến lược phí: ' + error);
+                }
+            });
+        });
+    });
+</script>
 </body>
 </html>

@@ -2,22 +2,21 @@ package com.library.dao;
 
 import com.library.config.DatabaseConfig;
 import com.library.model.Loan;
-import com.library.util.DateProvider;
 
 import java.sql.*;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 public class LoanDAO {
     public void addLoan(Loan loan) throws SQLException {
-        String sql = "INSERT INTO loans (book_id, member_id, borrow_date, due_date) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO loans (book_id, member_id, borrow_date, due_date, fee_strategy) VALUES (?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setInt(1, loan.getBookId());
             stmt.setInt(2, loan.getMemberId());
             stmt.setDate(3, Date.valueOf(loan.getBorrowDate()));
             stmt.setDate(4, Date.valueOf(loan.getDueDate()));
+            stmt.setString(5, loan.getFeeStrategy() != null ? loan.getFeeStrategy() : "daily"); // Mặc định
             stmt.executeUpdate();
 
             try (ResultSet rs = stmt.getGeneratedKeys()) {
@@ -45,14 +44,7 @@ public class LoanDAO {
                 Date returnDate = rs.getDate("return_date");
                 loan.setReturnDate(returnDate != null ? returnDate.toLocalDate() : null);
                 loan.setOverdueFee(rs.getDouble("overdue_fee"));
-                // Tính phí trễ hạn nếu chưa trả và đã quá hạn
-                if (loan.getReturnDate() == null && loan.getDueDate() != null) {
-                    LocalDate currentDate = DateProvider.getInstance().getCurrentDate();
-                    if (currentDate.isAfter(loan.getDueDate())) {
-                        loan.setFeeStrategy("daily"); // Hoặc "quantity"
-                        loan.calculateOverdueFee();
-                    }
-                }
+                loan.setFeeStrategy(rs.getString("fee_strategy")); // Lấy chiến lược từ DB
                 loans.add(loan);
             }
             System.out.println("Số lượng loans lấy được: " + loans.size());
@@ -81,6 +73,7 @@ public class LoanDAO {
                     Date returnDate = rs.getDate("return_date");
                     loan.setReturnDate(returnDate != null ? returnDate.toLocalDate() : null);
                     loan.setOverdueFee(rs.getDouble("overdue_fee"));
+                    loan.setFeeStrategy(rs.getString("fee_strategy"));
                     return loan;
                 }
             }
@@ -104,7 +97,8 @@ public class LoanDAO {
                     loan.setDueDate(rs.getDate("due_date").toLocalDate());
                     Date returnDate = rs.getDate("return_date");
                     loan.setReturnDate(returnDate != null ? returnDate.toLocalDate() : null);
-                    loan.setOverdueFee(rs.getDouble("overdue_fee"));
+                    loan.setOverdueFee(rs.getDouble("overdue_fee")); // Đảm bảo lấy từ DB
+                    loan.setFeeStrategy(rs.getString("fee_strategy"));
                     loans.add(loan);
                 }
             }
@@ -113,12 +107,13 @@ public class LoanDAO {
     }
 
     public void updateLoan(Loan loan) throws SQLException {
-        String sql = "UPDATE loans SET return_date = ?, overdue_fee = ? WHERE id = ?";
+        String sql = "UPDATE loans SET return_date = ?, overdue_fee = ?, fee_strategy = ? WHERE id = ?";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setDate(1, loan.getReturnDate() != null ? Date.valueOf(loan.getReturnDate()) : null);
             stmt.setDouble(2, loan.getOverdueFee());
-            stmt.setInt(3, loan.getId());
+            stmt.setString(3, loan.getFeeStrategy());
+            stmt.setInt(4, loan.getId());
             int rowsAffected = stmt.executeUpdate();
             if (rowsAffected == 0) {
                 System.out.println("Không có hàng nào được cập nhật cho loan id: " + loan.getId());

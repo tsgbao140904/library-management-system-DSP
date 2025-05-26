@@ -51,18 +51,10 @@ public class LoanServlet extends HttpServlet {
         try {
             List<Loan> allLoans = loanDAO.getAllLoans();
 
-            // Tính phí trễ hạn cho các khoản mượn chưa trả và đã quá hạn
             for (Loan loan : allLoans) {
                 try {
                     Book book = bookDAO.getBookById(loan.getBookId());
                     loan.setBook(book);
-                    if (loan.getReturnDate() == null && loan.getDueDate() != null) {
-                        LocalDate currentDate = LocalDate.now();
-                        if (currentDate.isAfter(loan.getDueDate())) {
-                            loan.setFeeStrategy("daily"); // Mặc định là daily, có thể thay đổi
-                            loan.calculateOverdueFee();
-                        }
-                    }
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
@@ -114,6 +106,12 @@ public class LoanServlet extends HttpServlet {
             return;
         }
 
+        String action = req.getParameter("action");
+        if ("updateFeeStrategy".equals(action)) {
+            handleUpdateFeeStrategy(req, resp);
+            return;
+        }
+
         String bookId = req.getParameter("bookId");
         String memberId = req.getParameter("memberId");
 
@@ -140,19 +138,40 @@ public class LoanServlet extends HttpServlet {
         }
     }
 
+    private void handleUpdateFeeStrategy(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String loanId = req.getParameter("loanId");
+        String feeStrategy = req.getParameter("feeStrategy");
+        try {
+            Loan loan = loanDAO.getLoanById(Integer.parseInt(loanId));
+            if (loan == null) {
+                resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                resp.getWriter().write("Khoản vay không tồn tại.");
+                return;
+            }
+            loan.setFeeStrategy(feeStrategy);
+            loan.calculateOverdueFee(); // Tính lại phí sau khi thay đổi chiến lược
+            loanDAO.updateLoan(loan);
+            resp.setStatus(HttpServletResponse.SC_OK);
+            resp.getWriter().write("Cập nhật chiến lược phí thành công.");
+        } catch (SQLException e) {
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            resp.getWriter().write("Lỗi khi cập nhật chiến lược phí: " + e.getMessage());
+        }
+    }
+
     private void handleReturn(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String loanId = req.getParameter("id");
-        String feeType = req.getParameter("feeType"); // Lấy loại phí (daily hoặc quantity)
         try {
             Loan loan = loanDAO.getLoanById(Integer.parseInt(loanId));
             if (loan == null) {
                 req.setAttribute("error", "Khoản vay không tồn tại.");
             } else {
-                loan.setReturnDate(LocalDate.now());
-                loan.setFeeStrategy(feeType != null ? feeType : "daily"); // Mặc định là daily nếu không có feeType
-                loan.calculateOverdueFee();
+                System.out.println("Trước khi trả: Loan ID = " + loan.getId() + ", overdue_fee = " + loan.getOverdueFee() + ", fee_strategy = " + loan.getFeeStrategy());
+                loan.setReturnDate(LocalDate.now()); // Đặt ngày trả là ngày hiện tại (27/05/2025)
+                System.out.println("Sau khi setReturnDate: Loan ID = " + loan.getId() + ", overdue_fee = " + loan.getOverdueFee());
                 loanDAO.updateLoan(loan);
-                req.setAttribute("success", "Trả sách thành công! Phí trễ hạn: " + loan.getOverdueFee() + " USD");
+                String strategyDisplay = "daily".equalsIgnoreCase(loan.getFeeStrategy()) ? "Theo ngày" : "Theo số lượng";
+                req.setAttribute("success", "Trả sách thành công! Phí trễ hạn: " + loan.getOverdueFee() + " USD (" + strategyDisplay + ")");
             }
 
             List<Loan> allLoans = loanDAO.getAllLoans();
@@ -160,13 +179,6 @@ public class LoanServlet extends HttpServlet {
                 try {
                     Book book = bookDAO.getBookById(l.getBookId());
                     l.setBook(book);
-                    if (l.getReturnDate() == null && l.getDueDate() != null) {
-                        LocalDate currentDate = LocalDate.now();
-                        if (currentDate.isAfter(l.getDueDate())) {
-                            l.setFeeStrategy("daily");
-                            l.calculateOverdueFee();
-                        }
-                    }
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
