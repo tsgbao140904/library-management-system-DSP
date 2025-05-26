@@ -24,7 +24,7 @@ public class LoanServlet extends HttpServlet {
     private LoanDAO loanDAO;
     private BookDAO bookDAO;
     private MemberDAO memberDAO;
-    private static final int ITEMS_PER_PAGE = 10; // Số lượng khoản mượn trên mỗi trang
+    private static final int ITEMS_PER_PAGE = 10;
 
     @Override
     public void init() {
@@ -49,17 +49,30 @@ public class LoanServlet extends HttpServlet {
         }
 
         try {
-            // Lấy toàn bộ danh sách khoản mượn
             List<Loan> allLoans = loanDAO.getAllLoans();
 
-            // Sắp xếp: Ưu tiên chưa trả (returnDate == null) lên đầu, sắp xếp theo borrowDate giảm dần
-            // Các khoản đã trả (returnDate != null) xếp sau, sắp xếp theo returnDate giảm dần
-            allLoans.sort(Comparator.comparing(
-                            Loan::getReturnDate, Comparator.nullsFirst(Comparator.naturalOrder()) // Ưu tiên returnDate == null lên đầu
-                    ).thenComparing(Loan::getBorrowDate, Comparator.reverseOrder()) // Sắp xếp borrowDate giảm dần cho chưa trả
-                    .thenComparing(Loan::getReturnDate, Comparator.nullsLast(Comparator.reverseOrder()))); // Sắp xếp returnDate giảm dần cho đã trả
+            // Tính phí trễ hạn cho các khoản mượn chưa trả và đã quá hạn
+            for (Loan loan : allLoans) {
+                try {
+                    Book book = bookDAO.getBookById(loan.getBookId());
+                    loan.setBook(book);
+                    if (loan.getReturnDate() == null && loan.getDueDate() != null) {
+                        LocalDate currentDate = LocalDate.now();
+                        if (currentDate.isAfter(loan.getDueDate())) {
+                            loan.setFeeStrategy("daily"); // Mặc định là daily, có thể thay đổi
+                            loan.calculateOverdueFee();
+                        }
+                    }
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
 
-            // Lấy tham số trang từ request, mặc định là 1
+            allLoans.sort(Comparator.comparing(
+                            Loan::getReturnDate, Comparator.nullsFirst(Comparator.naturalOrder())
+                    ).thenComparing(Loan::getBorrowDate, Comparator.reverseOrder())
+                    .thenComparing(Loan::getReturnDate, Comparator.nullsLast(Comparator.reverseOrder())));
+
             int page = 1;
             String pageParam = req.getParameter("page");
             if (pageParam != null && !pageParam.isEmpty()) {
@@ -71,17 +84,14 @@ public class LoanServlet extends HttpServlet {
                 }
             }
 
-            // Tính toán phân trang
             int totalItems = allLoans.size();
             int totalPages = (int) Math.ceil((double) totalItems / ITEMS_PER_PAGE);
             if (page > totalPages && totalPages > 0) page = totalPages;
 
-            // Lấy danh sách khoản mượn cho trang hiện tại
             int start = (page - 1) * ITEMS_PER_PAGE;
             int end = Math.min(start + ITEMS_PER_PAGE, totalItems);
             List<Loan> loansForPage = (totalItems > 0) ? allLoans.subList(start, end) : List.of();
 
-            // Truyền thông tin phân trang và danh sách khoản mượn cho JSP
             req.setAttribute("loans", loansForPage);
             req.setAttribute("currentPage", page);
             req.setAttribute("totalPages", totalPages);
@@ -116,14 +126,13 @@ public class LoanServlet extends HttpServlet {
                 return;
             }
 
-            Loan loan = new Loan(); // Sử dụng constructor mặc định
+            Loan loan = new Loan();
             loan.setBookId(book.getId());
             loan.setMemberId(member.getId());
             loan.setBorrowDate(LocalDate.now());
             loan.setDueDate(LocalDate.now().plusDays(14));
             loanDAO.addLoan(loan);
 
-            // Sau khi thêm, chuyển hướng để áp dụng phân trang và sắp xếp
             resp.sendRedirect(req.getContextPath() + "/admin/loans");
         } catch (SQLException e) {
             req.setAttribute("error", "Lỗi khi thêm khoản vay: " + e.getMessage());
@@ -133,18 +142,36 @@ public class LoanServlet extends HttpServlet {
 
     private void handleReturn(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String loanId = req.getParameter("id");
+        String feeType = req.getParameter("feeType"); // Lấy loại phí (daily hoặc quantity)
         try {
             Loan loan = loanDAO.getLoanById(Integer.parseInt(loanId));
             if (loan == null) {
                 req.setAttribute("error", "Khoản vay không tồn tại.");
             } else {
                 loan.setReturnDate(LocalDate.now());
+                loan.setFeeStrategy(feeType != null ? feeType : "daily"); // Mặc định là daily nếu không có feeType
+                loan.calculateOverdueFee();
                 loanDAO.updateLoan(loan);
-                req.setAttribute("success", "Trả sách thành công!");
+                req.setAttribute("success", "Trả sách thành công! Phí trễ hạn: " + loan.getOverdueFee() + " USD");
             }
 
-            // Lấy lại danh sách và sắp xếp
             List<Loan> allLoans = loanDAO.getAllLoans();
+            for (Loan l : allLoans) {
+                try {
+                    Book book = bookDAO.getBookById(l.getBookId());
+                    l.setBook(book);
+                    if (l.getReturnDate() == null && l.getDueDate() != null) {
+                        LocalDate currentDate = LocalDate.now();
+                        if (currentDate.isAfter(l.getDueDate())) {
+                            l.setFeeStrategy("daily");
+                            l.calculateOverdueFee();
+                        }
+                    }
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+
             allLoans.sort(Comparator.comparing(
                             Loan::getReturnDate, Comparator.nullsFirst(Comparator.naturalOrder())
                     ).thenComparing(Loan::getBorrowDate, Comparator.reverseOrder())
@@ -152,7 +179,7 @@ public class LoanServlet extends HttpServlet {
 
             int totalItems = allLoans.size();
             int totalPages = (int) Math.ceil((double) totalItems / ITEMS_PER_PAGE);
-            int page = 1; // Mặc định quay về trang 1 sau khi trả
+            int page = 1;
             int start = (page - 1) * ITEMS_PER_PAGE;
             int end = Math.min(start + ITEMS_PER_PAGE, totalItems);
             List<Loan> loansForPage = (totalItems > 0) ? allLoans.subList(start, end) : List.of();

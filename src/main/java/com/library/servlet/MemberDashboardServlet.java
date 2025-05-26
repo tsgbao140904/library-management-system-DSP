@@ -54,13 +54,12 @@ public class MemberDashboardServlet extends HttpServlet {
                     return;
                 }
                 List<Loan> loans = loanDAO.getLoansByMember(((Member) session.getAttribute("user")).getId());
-                // Thêm thông tin sách cho từng khoản mượn
                 for (Loan loan : loans) {
                     try {
                         Book book = bookDAO.getBookById(loan.getBookId());
                         loan.setBook(book);
                     } catch (SQLException e) {
-                        e.printStackTrace(); // Xử lý lỗi theo cách phù hợp
+                        e.printStackTrace();
                     }
                 }
                 req.setAttribute("loans", loans);
@@ -95,12 +94,10 @@ public class MemberDashboardServlet extends HttpServlet {
                     throw new IllegalArgumentException("Vui lòng chọn một sách để mượn.");
                 }
                 int bookIdInt = Integer.parseInt(bookId);
-                // Kiểm tra xem sách có tồn tại không
                 Book book = bookDAO.getBookById(bookIdInt);
                 if (book == null) {
                     throw new IllegalArgumentException("Sách không tồn tại.");
                 }
-                // Kiểm tra xem sách đã được mượn chưa
                 List<Loan> loans = loanDAO.getAllLoans();
                 boolean isBorrowed = loans.stream()
                         .anyMatch(loan -> loan.getBookId() == bookIdInt && loan.getReturnDate() == null);
@@ -144,6 +141,7 @@ public class MemberDashboardServlet extends HttpServlet {
 
     private void handleReturn(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String loanId = req.getParameter("id");
+        String feeType = req.getParameter("feeType"); // Lấy loại phí (daily hoặc quantity)
         HttpSession session = req.getSession();
         Member user = (Member) session.getAttribute("user");
         List<Loan> loans = null;
@@ -152,18 +150,21 @@ public class MemberDashboardServlet extends HttpServlet {
             if (loan == null || loan.getMemberId() != user.getId()) {
                 req.setAttribute("error", "Khoản vay không tồn tại hoặc không thuộc về bạn.");
             } else {
-                loan.setReturnDate(LocalDate.now());
+                LocalDate returnDate = LocalDate.now();
+                loan.setReturnDate(returnDate);
+                // Chọn chiến lược tính phí dựa trên feeType
+                loan.setFeeStrategy(feeType);
+                loan.calculateOverdueFee();
                 loanDAO.updateLoan(loan);
-                req.setAttribute("success", "Trả sách thành công!");
+                req.setAttribute("success", "Trả sách thành công! Phí trễ hạn: " + loan.getOverdueFee() + " USD");
             }
             loans = loanDAO.getLoansByMember(user.getId());
-            // Thêm thông tin sách cho từng khoản mượn
             for (Loan l : loans) {
                 try {
                     Book book = bookDAO.getBookById(l.getBookId());
                     l.setBook(book);
                 } catch (SQLException e) {
-                    e.printStackTrace(); // Xử lý lỗi theo cách phù hợp
+                    e.printStackTrace();
                 }
             }
             req.setAttribute("loans", loans);

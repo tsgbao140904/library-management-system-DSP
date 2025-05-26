@@ -2,8 +2,10 @@ package com.library.dao;
 
 import com.library.config.DatabaseConfig;
 import com.library.model.Loan;
+import com.library.util.DateProvider;
 
 import java.sql.*;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,7 +36,7 @@ public class LoanDAO {
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
-                Loan loan = new Loan(); // Sử dụng constructor mặc định
+                Loan loan = new Loan();
                 loan.setId(rs.getInt("id"));
                 loan.setBookId(rs.getInt("book_id"));
                 loan.setMemberId(rs.getInt("member_id"));
@@ -42,6 +44,15 @@ public class LoanDAO {
                 loan.setDueDate(rs.getDate("due_date").toLocalDate());
                 Date returnDate = rs.getDate("return_date");
                 loan.setReturnDate(returnDate != null ? returnDate.toLocalDate() : null);
+                loan.setOverdueFee(rs.getDouble("overdue_fee"));
+                // Tính phí trễ hạn nếu chưa trả và đã quá hạn
+                if (loan.getReturnDate() == null && loan.getDueDate() != null) {
+                    LocalDate currentDate = DateProvider.getInstance().getCurrentDate();
+                    if (currentDate.isAfter(loan.getDueDate())) {
+                        loan.setFeeStrategy("daily"); // Hoặc "quantity"
+                        loan.calculateOverdueFee();
+                    }
+                }
                 loans.add(loan);
             }
             System.out.println("Số lượng loans lấy được: " + loans.size());
@@ -61,7 +72,7 @@ public class LoanDAO {
             stmt.setInt(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    Loan loan = new Loan(); // Sử dụng constructor mặc định
+                    Loan loan = new Loan();
                     loan.setId(rs.getInt("id"));
                     loan.setBookId(rs.getInt("book_id"));
                     loan.setMemberId(rs.getInt("member_id"));
@@ -69,6 +80,7 @@ public class LoanDAO {
                     loan.setDueDate(rs.getDate("due_date").toLocalDate());
                     Date returnDate = rs.getDate("return_date");
                     loan.setReturnDate(returnDate != null ? returnDate.toLocalDate() : null);
+                    loan.setOverdueFee(rs.getDouble("overdue_fee"));
                     return loan;
                 }
             }
@@ -84,7 +96,7 @@ public class LoanDAO {
             stmt.setInt(1, memberId);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    Loan loan = new Loan(); // Sử dụng constructor mặc định
+                    Loan loan = new Loan();
                     loan.setId(rs.getInt("id"));
                     loan.setBookId(rs.getInt("book_id"));
                     loan.setMemberId(rs.getInt("member_id"));
@@ -92,6 +104,7 @@ public class LoanDAO {
                     loan.setDueDate(rs.getDate("due_date").toLocalDate());
                     Date returnDate = rs.getDate("return_date");
                     loan.setReturnDate(returnDate != null ? returnDate.toLocalDate() : null);
+                    loan.setOverdueFee(rs.getDouble("overdue_fee"));
                     loans.add(loan);
                 }
             }
@@ -100,11 +113,12 @@ public class LoanDAO {
     }
 
     public void updateLoan(Loan loan) throws SQLException {
-        String sql = "UPDATE loans SET return_date = ? WHERE id = ?";
+        String sql = "UPDATE loans SET return_date = ?, overdue_fee = ? WHERE id = ?";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setDate(1, loan.getReturnDate() != null ? Date.valueOf(loan.getReturnDate()) : null);
-            stmt.setInt(2, loan.getId());
+            stmt.setDouble(2, loan.getOverdueFee());
+            stmt.setInt(3, loan.getId());
             int rowsAffected = stmt.executeUpdate();
             if (rowsAffected == 0) {
                 System.out.println("Không có hàng nào được cập nhật cho loan id: " + loan.getId());
