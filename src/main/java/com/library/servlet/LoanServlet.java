@@ -6,6 +6,8 @@ import com.library.dao.MemberDAO;
 import com.library.model.Book;
 import com.library.model.Loan;
 import com.library.model.Member;
+import com.library.model.book.AcademicBookFactory;
+import com.library.model.book.BookFactory;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -16,6 +18,7 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -50,19 +53,28 @@ public class LoanServlet extends HttpServlet {
 
         try {
             List<Loan> allLoans = loanDAO.getAllLoans();
+            List<Book> allBooks = bookDAO.getAllBooks();
+            List<Member> allMembers = memberDAO.getAllMembers();
 
             for (Loan loan : allLoans) {
                 try {
+                    // Gán thông tin sách
                     Book book = bookDAO.getBookById(loan.getBookId());
-                    loan.setBook(book);
+                    loan.setBook(book != null ? book : createDefaultBook(loan.getBookId()));
+
+                    // Gán thông tin thành viên
+                    Member member = memberDAO.getMemberById(loan.getMemberId());
+                    loan.setMember(member != null ? member : createDefaultMember(loan.getMemberId()));
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
             }
 
+            List<Book> availableBooks = bookDAO.getAvailableBooks();
+
             allLoans.sort(Comparator.comparing(
-                            Loan::getReturnDate, Comparator.nullsFirst(Comparator.naturalOrder())
-                    ).thenComparing(Loan::getBorrowDate, Comparator.reverseOrder())
+                            Loan::getReturnDate, Comparator.nullsFirst(Comparator.naturalOrder()))
+                    .thenComparing(Loan::getBorrowDate, Comparator.reverseOrder())
                     .thenComparing(Loan::getReturnDate, Comparator.nullsLast(Comparator.reverseOrder())));
 
             int page = 1;
@@ -87,6 +99,8 @@ public class LoanServlet extends HttpServlet {
             req.setAttribute("loans", loansForPage);
             req.setAttribute("currentPage", page);
             req.setAttribute("totalPages", totalPages);
+            req.setAttribute("availableBooks", availableBooks);
+            req.setAttribute("allMembers", allMembers);
             req.getRequestDispatcher("/admin/loans.jsp").forward(req, resp);
         } catch (SQLException e) {
             req.setAttribute("error", "Lỗi khi lấy danh sách khoản vay: " + e.getMessage());
@@ -149,7 +163,7 @@ public class LoanServlet extends HttpServlet {
                 return;
             }
             loan.setFeeStrategy(feeStrategy);
-            loan.calculateOverdueFee(); // Tính lại phí sau khi thay đổi chiến lược
+            loan.calculateOverdueFee();
             loanDAO.updateLoan(loan);
             resp.setStatus(HttpServletResponse.SC_OK);
             resp.getWriter().write("Cập nhật chiến lược phí thành công.");
@@ -167,7 +181,7 @@ public class LoanServlet extends HttpServlet {
                 req.setAttribute("error", "Khoản vay không tồn tại.");
             } else {
                 System.out.println("Trước khi trả: Loan ID = " + loan.getId() + ", overdue_fee = " + loan.getOverdueFee() + ", fee_strategy = " + loan.getFeeStrategy());
-                loan.setReturnDate(LocalDate.now()); // Đặt ngày trả là ngày hiện tại (27/05/2025)
+                loan.setReturnDate(LocalDate.now());
                 System.out.println("Sau khi setReturnDate: Loan ID = " + loan.getId() + ", overdue_fee = " + loan.getOverdueFee());
                 loanDAO.updateLoan(loan);
                 String strategyDisplay = "daily".equalsIgnoreCase(loan.getFeeStrategy()) ? "Theo ngày" : "Theo số lượng";
@@ -185,8 +199,8 @@ public class LoanServlet extends HttpServlet {
             }
 
             allLoans.sort(Comparator.comparing(
-                            Loan::getReturnDate, Comparator.nullsFirst(Comparator.naturalOrder())
-                    ).thenComparing(Loan::getBorrowDate, Comparator.reverseOrder())
+                            Loan::getReturnDate, Comparator.nullsFirst(Comparator.naturalOrder()))
+                    .thenComparing(Loan::getBorrowDate, Comparator.reverseOrder())
                     .thenComparing(Loan::getReturnDate, Comparator.nullsLast(Comparator.reverseOrder())));
 
             int totalItems = allLoans.size();
@@ -203,5 +217,16 @@ public class LoanServlet extends HttpServlet {
             req.setAttribute("error", "Lỗi khi trả sách: " + e.getMessage());
             req.getRequestDispatcher("/admin/loans.jsp").forward(req, resp);
         }
+    }
+
+    // Phương thức tạo sách mặc định bằng BookFactory
+    private Book createDefaultBook(int id) {
+        BookFactory factory = new AcademicBookFactory(); // Sử dụng AcademicBookFactory làm mặc định
+        return factory.createBook(id, "Không có tên", "");
+    }
+
+    // Phương thức tạo thành viên mặc định
+    private Member createDefaultMember(int id) {
+        return new Member(id, "user" + id, "", "Không có tên", "MEMBER");
     }
 }

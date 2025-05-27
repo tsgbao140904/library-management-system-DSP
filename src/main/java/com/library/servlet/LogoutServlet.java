@@ -21,7 +21,7 @@ public class LogoutServlet extends HttpServlet {
         String successMessage = URLEncoder.encode("Đăng xuất thành công!", StandardCharsets.UTF_8.toString());
         // Tạo cookie với giá trị đã mã hóa
         Cookie successCookie = new Cookie("success", successMessage);
-        successCookie.setMaxAge(30); // Cookie tồn tại 30 giây
+        successCookie.setMaxAge(300); // Cookie tồn tại 300 giây
         successCookie.setPath(contextPath); // Áp dụng cho toàn bộ ứng dụng
         resp.addCookie(successCookie);
 

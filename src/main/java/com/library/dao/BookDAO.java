@@ -111,6 +111,7 @@ public class BookDAO {
             stmt.executeUpdate();
         }
     }
+
     public void unmarkAsFavorite(int id) throws SQLException {
         String sql = "UPDATE books SET is_favorite = FALSE WHERE id = ?";
         try (Connection conn = DatabaseConfig.getConnection();
@@ -118,5 +119,27 @@ public class BookDAO {
             stmt.setInt(1, id);
             stmt.executeUpdate();
         }
+    }
+
+    public List<Book> getAvailableBooks() throws SQLException {
+        List<Book> books = new ArrayList<>();
+        String sql = "SELECT b.* FROM books b LEFT JOIN loans l ON b.id = l.book_id AND l.return_date IS NULL WHERE l.book_id IS NULL";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                BookFactory factory = rs.getString("type").equals("Printed") ? new AcademicBookFactory() : new EntertainmentBookFactory();
+                Book book = factory.createBook(
+                        rs.getInt("id"),
+                        rs.getString("title"),
+                        rs.getString("author")
+                );
+                if (rs.getBoolean("is_favorite")) {
+                    book = new FavoriteBookDecorator(book);
+                }
+                books.add(book);
+            }
+        }
+        return books;
     }
 }

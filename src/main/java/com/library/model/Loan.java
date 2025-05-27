@@ -16,6 +16,7 @@ public class Loan {
     private LocalDate returnDate;
     private double overdueFee;
     private Book book;
+    private Member member; // Thêm thuộc tính member để lưu thông tin thành viên
     private FeeContext feeContext; // Quản lý chiến lược tính phí
     private String feeStrategy; // Lưu chiến lược để đồng bộ với DB
 
@@ -46,6 +47,8 @@ public class Loan {
     public void setOverdueFee(double overdueFee) { this.overdueFee = overdueFee; }
     public Book getBook() { return book; }
     public void setBook(Book book) { this.book = book; }
+    public Member getMember() { return member; } // Thêm getter cho member
+    public void setMember(Member member) { this.member = member; } // Thêm setter cho member
     public String getFeeStrategy() { return feeStrategy; }
 
     // Phương thức tính phí trễ hạn

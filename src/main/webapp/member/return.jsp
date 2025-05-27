@@ -61,8 +61,10 @@
             <td><%= loan.getDueDate() %></td>
             <td><%= loan.getOverdueFee() %></td>
             <td>
-                <a href="member/return?action=return&id=<%= loan.getId() %>&feeType=daily" class="btn btn-sm btn-success">Trả (Theo ngày)</a>
-                <a href="member/return?action=return&id=<%= loan.getId() %>&feeType=quantity" class="btn btn-sm btn-success">Trả (Theo số lượng)</a>
+                <a href="member/return?action=return&id=<%= loan.getId() %>&feeType=<%= loan.getFeeStrategy() %>"
+                   class="btn btn-sm btn-success">
+                    Trả sách
+                </a>
             </td>
         </tr>
         <% } %>

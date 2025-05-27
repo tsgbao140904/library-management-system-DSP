@@ -1,5 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ page import="com.library.model.Loan, java.util.List" %>
+<%@ page import="com.library.model.Loan, com.library.model.Book, com.library.model.Member, java.util.List" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -47,10 +47,30 @@
     <form action="admin/loans" method="post" class="mb-4">
         <div class="row">
             <div class="col">
-                <input type="number" class="form-control" name="bookId" placeholder="ID Sách" required>
+                <select class="form-select" name="bookId" required>
+                    <option value="" disabled selected>Chọn sách</option>
+                    <% List<Book> availableBooks = (List<Book>) request.getAttribute("availableBooks"); %>
+                    <% if (availableBooks != null && !availableBooks.isEmpty()) { %>
+                    <% for (Book book : availableBooks) { %>
+                    <option value="<%= book.getId() %>"><%= book.getTitle() %> (ID: <%= book.getId() %>)</option>
+                    <% } %>
+                    <% } else { %>
+                    <option value="" disabled>Không có sách nào khả dụng</option>
+                    <% } %>
+                </select>
             </div>
             <div class="col">
-                <input type="number" class="form-control" name="memberId" placeholder="ID Thành viên" required>
+                <select class="form-select" name="memberId" required>
+                    <option value="" disabled selected>Chọn thành viên</option>
+                    <% List<Member> allMembers = (List<Member>) request.getAttribute("allMembers"); %>
+                    <% if (allMembers != null && !allMembers.isEmpty()) { %>
+                    <% for (Member member : allMembers) { %>
+                    <option value="<%= member.getId() %>"><%= member.getFullName() %> (ID: <%= member.getId() %>)</option>
+                    <% } %>
+                    <% } else { %>
+                    <option value="" disabled>Không có thành viên nào</option>
+                    <% } %>
+                </select>
             </div>
             <div class="col">
                 <button type="submit" class="btn btn-primary">Mượn sách</button>
@@ -61,8 +81,8 @@
         <thead>
         <tr>
             <th>ID</th>
-            <th>ID Sách</th>
-            <th>ID Thành viên</th>
+            <th>Tên sách</th>
+            <th>Thành viên mượn</th>
             <th>Ngày mượn</th>
             <th>Hạn trả</th>
             <th>Ngày trả</th>
@@ -77,8 +97,8 @@
         <% for (Loan loan : loans) { %>
         <tr>
             <td><%= loan.getId() %></td>
-            <td><%= loan.getBookId() %></td>
-            <td><%= loan.getMemberId() %></td>
+            <td><%= loan.getBook() != null ? loan.getBook().getTitle() : "Không có tên (ID: " + loan.getBookId() + ")" %></td>
+            <td><%= loan.getMember() != null ? loan.getMember().getFullName() : "Không có tên (ID: " + loan.getMemberId() + ")" %></td>
             <td><%= loan.getBorrowDate() %></td>
             <td><%= loan.getDueDate() %></td>
             <td><%= loan.getReturnDate() != null ? loan.getReturnDate() : "Chưa trả" %></td>
@@ -95,7 +115,10 @@
             </td>
             <td>
                 <% if (loan.getReturnDate() == null) { %>
-                <a href="admin/loans?action=return&id=<%= loan.getId() %>" class="btn btn-sm btn-success">Trả</a>
+                <a href="admin/loans?action=return&id=<%= loan.getId() %>&feeType=<%= loan.getFeeStrategy() %>"
+                   class="btn btn-sm btn-success">
+                    Trả
+                </a>
                 <% } %>
             </td>
         </tr>
@@ -148,7 +171,7 @@
                 },
                 success: function(response) {
                     alert('Cập nhật chiến lược phí thành công!');
-                    location.reload(); // Làm mới trang để hiển thị phí mới
+                    location.reload();
                 },
                 error: function(xhr, status, error) {
                     alert('Lỗi khi cập nhật chiến lược phí: ' + error);
