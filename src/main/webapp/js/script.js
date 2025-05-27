@@ -2,7 +2,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Script loaded');
 
-    // Tự động ẩn alert sau 3 giây
+    // Tự động ẩn alert sau 2 giây
     setTimeout(function() {
         let successAlert = document.getElementById('successAlert');
         if (successAlert) {
@@ -22,5 +22,5 @@ document.addEventListener('DOMContentLoaded', function() {
                 errorAlert.style.display = 'none';
             }
         }
-    }, 3000); // 3000 milliseconds = 3 giây
+    }, 2000); // 3000 milliseconds = 2 giây
 });
