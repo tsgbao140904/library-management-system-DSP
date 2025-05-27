@@ -63,7 +63,7 @@ SET overdue_fee = CASE
     END
 WHERE return_date IS NOT NULL OR due_date < '2025-05-27';
 
--- Tắt an toàn dữ liệu =0 , bật lại =1
+-- Tắt an toàn dữ liệu = 0 , bật lại = 1
 SET SQL_SAFE_UPDATES = 0;
 SET SQL_SAFE_UPDATES = 1;
 
