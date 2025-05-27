@@ -161,4 +161,18 @@ public class MemberDAO {
 
         return members;
     }
+
+    // Thêm phương thức kiểm tra username đã tồn tại hay chưa
+    public boolean isUsernameExists(String username) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM members WHERE username = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, username);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        }
+        return false;
+    }
 }

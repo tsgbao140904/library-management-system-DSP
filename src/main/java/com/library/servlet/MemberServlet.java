@@ -110,15 +110,26 @@ public class MemberServlet extends HttpServlet {
 
         try {
             if (idParam != null && !idParam.trim().isEmpty()) {
+                // Cập nhật thành viên
                 int id = Integer.parseInt(idParam);
                 String username = req.getParameter("username");
                 String password = req.getParameter("password");
                 String fullName = req.getParameter("fullName");
                 String role = req.getParameter("role");
 
+                // Kiểm tra username khi cập nhật
+                Member existingMember = memberDAO.getMemberById(id);
+                if (!existingMember.getUsername().equals(username) && memberDAO.isUsernameExists(username)) {
+                    req.setAttribute("error", "Tên đăng nhập '" + username + "' đã tồn tại. Vui lòng chọn tên khác.");
+                    req.setAttribute("member", existingMember);
+                    req.getRequestDispatcher("/admin/editmember.jsp").forward(req, resp);
+                    return;
+                }
+
                 Member member = new Member(id, username, password, fullName, role);
                 memberDAO.updateMember(member);
             } else {
+                // Thêm thành viên mới
                 String name = req.getParameter("name");
                 String username = req.getParameter("username");
                 String password = req.getParameter("password");
@@ -139,7 +150,13 @@ public class MemberServlet extends HttpServlet {
                     return;
                 }
 
-                // Thêm thành viên với thông tin người dùng nhập
+                // Kiểm tra username khi thêm mới
+                if (memberDAO.isUsernameExists(username)) {
+                    req.setAttribute("error", "Tên đăng nhập '" + username + "' đã tồn tại. Vui lòng chọn tên khác.");
+                    req.getRequestDispatcher("/admin/members.jsp").forward(req, resp);
+                    return;
+                }
+
                 Member member = new Member(0, username.trim(), password.trim(), name.trim(), "MEMBER");
                 memberDAO.addMember(member);
 
@@ -149,7 +166,14 @@ public class MemberServlet extends HttpServlet {
             resp.sendRedirect(contextPath + "/admin/members");
 
         } catch (SQLException e) {
-            throw new ServletException("Lỗi CSDL: " + e.getMessage(), e);
+            req.setAttribute("error", "Lỗi CSDL: " + e.getMessage());
+            try {
+                List<Member> members = memberDAO.getAllMembers();
+                req.setAttribute("members", members);
+                req.getRequestDispatcher("/admin/members.jsp").forward(req, resp);
+            } catch (SQLException ex) {
+                throw new ServletException("Lỗi CSDL", ex);
+            }
         } catch (NumberFormatException e) {
             req.setAttribute("error", "ID không hợp lệ: " + e.getMessage());
             try {
