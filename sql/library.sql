@@ -49,8 +49,8 @@ INSERT INTO loans (book_id, member_id, borrow_date, due_date, return_date, fee_s
 VALUES
     (9, 2, '2025-05-20', '2025-05-26', NULL, 'daily'),    -- Hạn trả 26/05, chưa trả, trễ 1 ngày (tính đến 27/05/2025)
     (10, 10, '2025-05-20', '2025-05-26', NULL, 'quantity'), -- Hạn trả 26/05, chưa trả, trễ 1 ngày
-    (11, 12, '2025-05-20', '2025-05-27', NULL, 'daily');   -- Hạn trả 27/05, chưa trả, chưa trễ
-
+    (11, 12, '2025-05-20', '2025-05-27', NULL, 'daily'),   -- Hạn trả 27/05, chưa trả, chưa trễ
+    (12, 12, '2025-05-20', '2025-05-28', NULL, 'daily');
 -- Tính phí trễ hạn
 UPDATE loans
 SET overdue_fee = CASE
