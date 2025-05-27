@@ -30,12 +30,15 @@ public class BookServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = req.getSession(false);
         String contextPath = req.getContextPath();
-        if (session == null || session.getAttribute("user") == null || !((com.library.model.Member) session.getAttribute("user")).getRole().equals("ADMIN")) {
+
+        if (session == null || session.getAttribute("user") == null ||
+                !((com.library.model.Member) session.getAttribute("user")).getRole().equals("ADMIN")) {
             resp.sendRedirect(contextPath + "/login");
             return;
         }
 
         String action = req.getParameter("action");
+
         try {
             if ("edit".equals(action)) {
                 int id = Integer.parseInt(req.getParameter("id"));
@@ -50,19 +53,56 @@ public class BookServlet extends HttpServlet {
                 req.setAttribute("book", book);
                 req.getRequestDispatcher("/admin/editbook.jsp").forward(req, resp);
                 return;
+
             } else if ("delete".equals(action)) {
                 int id = Integer.parseInt(req.getParameter("id"));
                 bookDAO.deleteBook(id);
                 session.setAttribute("success", "Xóa sách thành công!");
+                resp.sendRedirect(contextPath + "/admin/books");
+                return;
+
             } else if ("favorite".equals(action)) {
                 int id = Integer.parseInt(req.getParameter("id"));
                 bookDAO.markAsFavorite(id);
                 session.setAttribute("success", "Đã đánh dấu sách là yêu thích!");
+                resp.sendRedirect(contextPath + "/admin/books");
+                return;
             }
 
-            List<Book> books = bookDAO.getAllBooks();
+            String searchId = req.getParameter("id");
+            Integer id = null;
+            if (searchId != null && !searchId.trim().isEmpty()) {
+                try {
+                    id = Integer.parseInt(searchId);
+                } catch (NumberFormatException e) {
+                    req.setAttribute("error", "ID phải là số nguyên hợp lệ.");
+                    List<Book> books = bookDAO.getAllBooks();
+                    req.setAttribute("books", books);
+                    req.getRequestDispatcher("/admin/books.jsp").forward(req, resp);
+                    return;
+                }
+            }
+
+            String title = req.getParameter("title");
+            String author = req.getParameter("author");
+            String type = req.getParameter("type");
+            String favorite = req.getParameter("favorite");
+
+            List<Book> books;
+
+            if ((searchId != null && !searchId.isEmpty()) ||
+                    (title != null && !title.isEmpty()) ||
+                    (author != null && !author.isEmpty()) ||
+                    (type != null && !type.isEmpty()) ||
+                    (favorite != null && !favorite.isEmpty())) {
+                books = bookDAO.searchBooks(searchId, title, author, type, favorite);
+            } else {
+                books = bookDAO.getAllBooks();
+            }
+
             req.setAttribute("books", books);
             req.getRequestDispatcher("/admin/books.jsp").forward(req, resp);
+
         } catch (SQLException e) {
             req.setAttribute("error", "Lỗi: " + e.getMessage());
             try {
@@ -94,9 +134,8 @@ public class BookServlet extends HttpServlet {
                     String author = req.getParameter("author");
                     String type = req.getParameter("type");
 
-                    // Sử dụng factory để tạo đối tượng Book phù hợp
                     BookFactory factory = type.equals("Printed") ? new AcademicBookFactory() : new EntertainmentBookFactory();
-                    Book book = factory.createBook(id, title, author); // ID được truyền vào để cập nhật
+                    Book book = factory.createBook(id, title, author);
                     bookDAO.updateBook(book);
                     session.setAttribute("success", "Cập nhật sách thành công!");
                     resp.sendRedirect(contextPath + "/admin/books");
@@ -108,7 +147,7 @@ public class BookServlet extends HttpServlet {
                 String type = req.getParameter("type");
 
                 BookFactory factory = type.equals("Printed") ? new AcademicBookFactory() : new EntertainmentBookFactory();
-                Book book = factory.createBook(0, title, author); // ID = 0 cho sách mới
+                Book book = factory.createBook(0, title, author);
                 bookDAO.addBook(book);
                 session.setAttribute("success", "Thêm sách thành công!");
                 resp.sendRedirect(contextPath + "/admin/books");

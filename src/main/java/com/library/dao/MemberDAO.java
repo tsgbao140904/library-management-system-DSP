@@ -70,16 +70,14 @@ public class MemberDAO {
         Connection conn = null;
         try {
             conn = DatabaseConfig.getConnection();
-            conn.setAutoCommit(false); // Bắt đầu giao dịch
+            conn.setAutoCommit(false);
 
-            // Xóa các khoản mượn liên quan đến thành viên
             String deleteLoansSql = "DELETE FROM loans WHERE member_id = ?";
             try (PreparedStatement deleteLoansStmt = conn.prepareStatement(deleteLoansSql)) {
                 deleteLoansStmt.setInt(1, id);
                 deleteLoansStmt.executeUpdate();
             }
 
-            // Xóa thành viên
             String deleteMemberSql = "DELETE FROM members WHERE id = ?";
             try (PreparedStatement deleteMemberStmt = conn.prepareStatement(deleteMemberSql)) {
                 deleteMemberStmt.setInt(1, id);
@@ -89,15 +87,15 @@ public class MemberDAO {
                 }
             }
 
-            conn.commit(); // Commit giao dịch nếu thành công
+            conn.commit();
         } catch (SQLException e) {
             if (conn != null) {
-                conn.rollback(); // Rollback nếu có lỗi
+                conn.rollback();
             }
             throw e;
         } finally {
             if (conn != null) {
-                conn.setAutoCommit(true); // Khôi phục auto-commit
+                conn.setAutoCommit(true);
                 conn.close();
             }
         }
@@ -115,6 +113,52 @@ public class MemberDAO {
                         rs.getString("role")));
             }
         }
+        return members;
+    }
+
+    public List<Member> searchMembers(Integer id, String username, String fullName, String role) throws SQLException {
+        List<Member> members = new ArrayList<>();
+
+        StringBuilder sql = new StringBuilder("SELECT * FROM members WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+
+        if (id != null) {
+            sql.append(" AND id = ?");
+            params.add(id);
+        }
+        if (username != null && !username.trim().isEmpty()) {
+            sql.append(" AND username LIKE ?");
+            params.add("%" + username.trim() + "%");
+        }
+        if (fullName != null && !fullName.trim().isEmpty()) {
+            sql.append(" AND full_name LIKE ?");
+            params.add("%" + fullName.trim() + "%");
+        }
+        if (role != null && !role.trim().isEmpty()) {
+            sql.append(" AND role = ?");
+            params.add(role.trim().toUpperCase());
+        }
+
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+
+            for (int i = 0; i < params.size(); i++) {
+                stmt.setObject(i + 1, params.get(i));
+            }
+
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                Member member = new Member(
+                        rs.getInt("id"),
+                        rs.getString("username"),
+                        rs.getString("password"),
+                        rs.getString("full_name"),
+                        rs.getString("role")
+                );
+                members.add(member);
+            }
+        }
+
         return members;
     }
 }

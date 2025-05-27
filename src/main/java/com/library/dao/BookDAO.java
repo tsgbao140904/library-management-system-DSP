@@ -142,4 +142,65 @@ public class BookDAO {
         }
         return books;
     }
+
+    public List<Book> searchBooks(String idStr, String title, String author, String type, String favoriteStr) throws SQLException {
+        List<Book> books = new ArrayList<>();
+
+        StringBuilder sql = new StringBuilder("SELECT * FROM books WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+
+        if (idStr != null && !idStr.isEmpty()) {
+            sql.append(" AND id = ?");
+            params.add(Integer.parseInt(idStr));
+        }
+
+        if (title != null && !title.isEmpty()) {
+            sql.append(" AND title LIKE ?");
+            params.add("%" + title + "%");
+        }
+
+        if (author != null && !author.isEmpty()) {
+            sql.append(" AND author LIKE ?");
+            params.add("%" + author + "%");
+        }
+
+        if (type != null && !type.isEmpty()) {
+            sql.append(" AND type = ?");
+            params.add(type);
+        }
+
+        if (favoriteStr != null && !favoriteStr.isEmpty()) {
+            sql.append(" AND is_favorite = ?");
+            params.add(Boolean.parseBoolean(favoriteStr));
+        }
+
+        try (Connection conn = DatabaseConfig.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                stmt.setObject(i + 1, params.get(i));
+            }
+
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                Book book = extractBookFromResultSet(rs);
+                books.add(book);
+            }
+        }
+
+        return books;
+    }
+
+    private Book extractBookFromResultSet(ResultSet rs) throws SQLException {
+        int id = rs.getInt("id");
+        String title = rs.getString("title");
+        String author = rs.getString("author");
+        String type = rs.getString("type");
+        boolean isFavorite = rs.getBoolean("is_favorite");
+
+        BookFactory factory = type.equals("Printed") ? new AcademicBookFactory() : new EntertainmentBookFactory();
+        Book book = factory.createBook(id, title, author);
+        if (isFavorite) {
+            book = new FavoriteBookDecorator(book);
+        }
+        return book;
+    }
 }

@@ -56,6 +56,27 @@
             </div>
         </div>
     </form>
+
+    <form action="${pageContext.request.contextPath}/admin/books" method="get" class="d-flex align-items-center gap-2 mb-4">
+        <input type="text" class="form-control tiny-input" name="id" placeholder="ID" style="width: 80px;">
+        <input type="text" class="form-control tiny-input" name="title" placeholder="Tiêu đề" style="width: 200px;">
+        <input type="text" class="form-control tiny-input" name="author" placeholder="Tác giả" style="width: 200px;">
+
+        <select class="form-control tiny-select" name="type" style="width: 130px;">
+            <option value="">-- Loại sách --</option>
+            <option value="Printed">Sách giấy</option>
+            <option value="EBook">Sách điện tử</option>
+        </select>
+
+        <select class="form-control tiny-select" name="favorite" style="width: 130px;">
+            <option value="">-- Yêu thích --</option>
+            <option value="true">Có</option>
+            <option value="false">Không</option>
+        </select>
+
+        <button type="submit" class="btn btn-success tiny-btn">Tìm kiếm</button>
+    </form>
+
     <table class="table table-bordered">
         <thead>
         <tr>
