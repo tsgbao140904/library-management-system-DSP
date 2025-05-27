@@ -58,11 +58,8 @@ public class LoanServlet extends HttpServlet {
 
             for (Loan loan : allLoans) {
                 try {
-                    // Gán thông tin sách
                     Book book = bookDAO.getBookById(loan.getBookId());
                     loan.setBook(book != null ? book : createDefaultBook(loan.getBookId()));
-
-                    // Gán thông tin thành viên
                     Member member = memberDAO.getMemberById(loan.getMemberId());
                     loan.setMember(member != null ? member : createDefaultMember(loan.getMemberId()));
                 } catch (SQLException e) {
@@ -191,8 +188,12 @@ public class LoanServlet extends HttpServlet {
             List<Loan> allLoans = loanDAO.getAllLoans();
             for (Loan l : allLoans) {
                 try {
+                    // Gán thông tin sách
                     Book book = bookDAO.getBookById(l.getBookId());
-                    l.setBook(book);
+                    l.setBook(book != null ? book : createDefaultBook(l.getBookId()));
+                    // Gán thông tin thành viên
+                    Member member = memberDAO.getMemberById(l.getMemberId());
+                    l.setMember(member != null ? member : createDefaultMember(l.getMemberId()));
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
@@ -219,13 +220,11 @@ public class LoanServlet extends HttpServlet {
         }
     }
 
-    // Phương thức tạo sách mặc định bằng BookFactory
     private Book createDefaultBook(int id) {
-        BookFactory factory = new AcademicBookFactory(); // Sử dụng AcademicBookFactory làm mặc định
+        BookFactory factory = new AcademicBookFactory();
         return factory.createBook(id, "Không có tên", "");
     }
 
-    // Phương thức tạo thành viên mặc định
     private Member createDefaultMember(int id) {
         return new Member(id, "user" + id, "", "Không có tên", "MEMBER");
     }
