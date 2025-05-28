@@ -65,9 +65,10 @@ public class LoanServlet extends HttpServlet {
             List<Member> allMembers = memberDAO.getAllMembers();
 
             for (Loan loan : allLoans) {
+                // Gán thông tin sách
                 Book book = bookDAO.getBookById(loan.getBookId());
                 loan.setBook(book != null ? book : createDefaultBook(loan.getBookId()));
-
+                // // Gán thông tin thành viên
                 Member member = memberDAO.getMemberById(loan.getMemberId());
                 loan.setMember(member != null ? member : createDefaultMember(loan.getMemberId()));
             }
